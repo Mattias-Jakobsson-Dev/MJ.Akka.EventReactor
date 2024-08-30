@@ -1,6 +1,8 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Akka;
+using Akka.Actor;
+using Akka.Persistence;
 using Akka.Streams.Dsl;
 using DC.Akka.EventReactor.PositionStreamSource;
 using DC.Akka.EventReactor.Tests.TestData;
@@ -33,6 +35,16 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
             return new PositionStreamStarter(events);
         }
 
+        public async Task<IImmutableList<string>> GetDeadLetters(ActorSystem actorSystem)
+        {
+            return (await StoredEventsLoader.GetEventsFrom(actorSystem, $"dead-letters-{Name}"))
+                .OfType<DeadLetterHandler.Events.DeadLetterAdded>()
+                .Select(x => x.Event)
+                .OfType<Events.IEvent>()
+                .Select(x => x.EventId)
+                .ToImmutableList();
+        }
+
         public IImmutableDictionary<string, int> GetHandledEvents()
         {
             return _handledEvents.ToImmutableDictionary();
@@ -46,6 +58,46 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
                     .From(events.Select((evnt, index) => new EventWithPosition(evnt, index + 1)))
                     .Where(x => position == null || x.Position > position);
             }
+        }
+    }
+    
+    private class StoredEventsLoader : ReceivePersistentActor
+    {
+        private static class Queries
+        {
+            public record GetEvents;
+        }
+
+        private static class Responses
+        {
+            public record GetEventsResponse(IImmutableList<object> Events);
+        }
+        
+        private readonly List<object> _events = [];
+        
+        public override string PersistenceId { get; }
+
+        public StoredEventsLoader(string id)
+        {
+            PersistenceId = id;
+            
+            Recover<object>(evnt => _events.Add(evnt));
+            
+            Command<Queries.GetEvents>(_ =>
+            {
+                Sender.Tell(new Responses.GetEventsResponse(_events.ToImmutableList()));
+            });
+        }
+
+        public static async Task<IImmutableList<object>> GetEventsFrom(ActorSystem actorSystem, string id)
+        {
+            var actor = actorSystem.ActorOf(Props.Create(() => new StoredEventsLoader(id)));
+            
+            var response = await actor.Ask<Responses.GetEventsResponse>(new Queries.GetEvents());
+            
+            actorSystem.Stop(actor);
+            
+            return response.Events;
         }
     }
 }

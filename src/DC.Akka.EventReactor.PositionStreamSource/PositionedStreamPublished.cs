@@ -120,12 +120,14 @@ public class PositionedStreamPublished(
                     return true;
                 }
 
+                var sender = Sender;
+
                 GetDeadLetter().Ask<DeadLetterHandler.Responses.AddDeadLetterResponse>(
                         new DeadLetterHandler.Commands.AddDeadLetter(evnt, nack.Error))
                     .ContinueWith(result =>
                     {
                         if (result.IsCompletedSuccessfully)
-                            self.Tell(new InternalCommands.Ack(nack.Position));
+                            self.Tell(new InternalCommands.Ack(nack.Position), sender);
                     });
 
                 return true;
