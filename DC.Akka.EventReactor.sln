@@ -4,6 +4,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DC.Akka.EventReactor", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DC.Akka.EventReactor.EventStore", "src\DC.Akka.EventReactor.EventStore\DC.Akka.EventReactor.EventStore.csproj", "{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DC.Akka.EventReactor.PositionStreamSource", "src\DC.Akka.EventReactor.PositionStreamSource\DC.Akka.EventReactor.PositionStreamSource.csproj", "{61745661-0A0F-4644-A94E-DD46DE085774}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -18,5 +20,9 @@ Global
 		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{61745661-0A0F-4644-A94E-DD46DE085774}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{61745661-0A0F-4644-A94E-DD46DE085774}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{61745661-0A0F-4644-A94E-DD46DE085774}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{61745661-0A0F-4644-A94E-DD46DE085774}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

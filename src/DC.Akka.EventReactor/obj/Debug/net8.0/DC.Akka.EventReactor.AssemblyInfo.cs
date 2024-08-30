@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("DC.Akka.EventReactor")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+5d6ec50906193afdf77d8fe31a568dccc9a52a26")]
 [assembly: System.Reflection.AssemblyProductAttribute("DC.Akka.EventReactor")]
 [assembly: System.Reflection.AssemblyTitleAttribute("DC.Akka.EventReactor")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]
