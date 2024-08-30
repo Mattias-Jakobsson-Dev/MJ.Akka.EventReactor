@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Akka.Persistence.EventStore" Version="1.5.26" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\DC.Akka.EventReactor\DC.Akka.EventReactor.csproj" />
+    </ItemGroup>
+
+</Project>

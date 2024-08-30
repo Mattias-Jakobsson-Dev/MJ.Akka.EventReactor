@@ -1,0 +1,22 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DC.Akka.EventReactor", "src\DC.Akka.EventReactor\DC.Akka.EventReactor.csproj", "{B654F57E-BA8B-4536-B6C0-62236F573840}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DC.Akka.EventReactor.EventStore", "src\DC.Akka.EventReactor.EventStore\DC.Akka.EventReactor.EventStore.csproj", "{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{B654F57E-BA8B-4536-B6C0-62236F573840}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B654F57E-BA8B-4536-B6C0-62236F573840}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B654F57E-BA8B-4536-B6C0-62236F573840}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B654F57E-BA8B-4536-B6C0-62236F573840}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7D3FF005-93A5-4252-9BB3-12D2EAE0D5A6}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+EndGlobal
