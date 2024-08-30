@@ -14,7 +14,8 @@ public record EventReactorInstanceConfig(
     {
         return this with
         {
-            RestartSettings = RestartSettings ?? systemConfig.RestartSettings
+            RestartSettings = RestartSettings ?? systemConfig.RestartSettings,
+            CreateHandler = CreateHandler ?? systemConfig.CreateHandler
         };
     }
 }
