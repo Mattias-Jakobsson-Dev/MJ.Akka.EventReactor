@@ -26,6 +26,8 @@ public class DeadLetterHandler : ReceivePersistentActor
     {
         _eventReactorName = eventReactorName;
         
+        Recover<Events.DeadLetterAdded>(On);
+        
         Command<Commands.AddDeadLetter>(cmd =>
         {
             Persist(new Events.DeadLetterAdded(cmd.Event, cmd.Error), evnt =>

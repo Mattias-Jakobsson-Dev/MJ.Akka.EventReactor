@@ -8,12 +8,14 @@ namespace DC.Akka.EventReactor.PositionStreamSource;
 
 public class PositionedStreamPublished(
     IStartPositionStream startPositionStream,
-    string eventReactorName) 
+    string eventReactorName)
     : ActorPublisher<IMessageWithAck>, IWithUnboundedStash
 {
     private static class InternalCommands
     {
         public record Start;
+
+        public record StartFrom(long? Position);
 
         public record Completed;
 
@@ -22,45 +24,58 @@ public class PositionedStreamPublished(
         public record PushEvent(EventWithPosition Event);
 
         public record Ack(long Position);
-        
+
         public record Nack(long Position, Exception Error);
     }
-    
+
     private static class InternalResponses
     {
         public record PushEventResponse;
-        
+
         public record AckResponse;
     }
 
     private readonly Dictionary<long, object> _inFlightMessages = new();
-    
+    private readonly List<long> _inFlightPositionStore = [];
+
     private UniqueKillSwitch? _killSwitch;
-    
+    private bool _shouldComplete;
+
     public IStash Stash { get; set; } = null!;
-    
+
     protected override bool Receive(object message)
     {
+        var self = Self;
+
         switch (message)
         {
             case InternalCommands.Start:
                 GetPositionKeeper()
                     .Ask<PositionedStreamPositionKeeper.Responses.GetLatestPositionResponse>(
                         new PositionedStreamPositionKeeper.Queries.GetLatestPosition())
-                    .PipeTo(Self, Sender);
-                
+                    .ContinueWith(result =>
+                    {
+                        if (result.IsCompletedSuccessfully)
+                            self.Tell(new InternalCommands.StartFrom(result.Result.Position));
+                        else
+                            self.Tell(new InternalCommands.Failed(result.Exception ?? new Exception("Start failed")));
+                    });
+
                 return true;
-            case PositionedStreamPositionKeeper.Responses.GetLatestPositionResponse latestPosition:
-                Start(latestPosition.Position);
-                
+            case InternalCommands.StartFrom startFrom:
+                Start(startFrom.Position);
+
                 return true;
             case InternalCommands.Completed:
-                OnComplete();
-                
+                if (_inFlightPositionStore.Count != 0)
+                    _shouldComplete = true;
+                else
+                    OnComplete();
+
                 return true;
             case InternalCommands.Failed failed:
                 OnError(failed.Failure);
-                
+
                 return true;
             case InternalCommands.PushEvent pushEvent:
                 if (TotalDemand > 0)
@@ -70,14 +85,14 @@ public class PositionedStreamPublished(
                     OnNext(new PositionedEventWithAck(
                         pushEvent.Event,
                         Self));
-                    
+
                     Sender.Tell(new InternalResponses.PushEventResponse());
                 }
                 else
                 {
                     Stash.Stash();
                 }
-                
+
                 return true;
             case InternalCommands.Ack ack:
                 _inFlightMessages.Remove(ack.Position);
@@ -87,47 +102,52 @@ public class PositionedStreamPublished(
                     var position = _inFlightMessages.Count != 0
                         ? _inFlightMessages.Keys.Min() - 1
                         : ack.Position;
-                    
+
                     GetPositionKeeper()
                         .Tell(new PositionedStreamPositionKeeper.Commands.StoreLatestPosition(position));
+
+                    _inFlightPositionStore.Add(position);
                 }
-                
+
                 Sender.Tell(new InternalResponses.AckResponse());
-                
+
                 return true;
             case InternalCommands.Nack nack:
                 if (!_inFlightMessages.TryGetValue(nack.Position, out var evnt))
                 {
                     Sender.Tell(new InternalResponses.AckResponse());
-                    
+
                     return true;
                 }
-                
-                var deadLetter = GetDeadLetter();
 
-                var self = Self;
-                
-                deadLetter.Ask<DeadLetterHandler.Responses.AddDeadLetterResponse>(
+                GetDeadLetter().Ask<DeadLetterHandler.Responses.AddDeadLetterResponse>(
                         new DeadLetterHandler.Commands.AddDeadLetter(evnt, nack.Error))
                     .ContinueWith(result =>
                     {
                         if (result.IsCompletedSuccessfully)
                             self.Tell(new InternalCommands.Ack(nack.Position));
                     });
-                
-                return true;
 
+                return true;
+            case PositionedStreamPositionKeeper.Responses.GetLatestPositionResponse latestPositionResponse:
+                if (latestPositionResponse.Position != null)
+                    _inFlightPositionStore.Remove(latestPositionResponse.Position.Value);
+
+                if (_inFlightPositionStore.Count == 0 && _shouldComplete)
+                    OnComplete();
+
+                return true;
             case Request req:
                 var messagesToPush = Stash.Count > req.Count ? req.Count : Stash.Count;
-                
+
                 for (var i = 0; i < messagesToPush; i++)
                     Stash.Unstash();
 
                 return true;
-            
+
             case Cancel:
                 _killSwitch?.Shutdown();
-                
+
                 return true;
         }
 
@@ -137,14 +157,14 @@ public class PositionedStreamPublished(
     protected override void PreStart()
     {
         Self.Tell(new InternalCommands.Start());
-        
+
         base.PreStart();
     }
 
     private void Start(long? position)
     {
         var self = Self;
-        
+
         _killSwitch = startPositionStream
             .StartFrom(position)
             .SelectAsyncUnordered(100, async evnt =>
@@ -173,16 +193,16 @@ public class PositionedStreamPublished(
         return Context.Child("dead-letter").GetOrElse(() =>
             Context.ActorOf(DeadLetterHandler.Init(eventReactorName), "dead-letter"));
     }
-    
+
     public static Props Init(IStartPositionStream startPositionStream, string eventReactorName)
     {
         return Props.Create(() => new PositionedStreamPublished(startPositionStream, eventReactorName));
     }
-    
+
     public record PositionedEventWithAck(EventWithPosition Event, IActorRef AckTo) : IMessageWithAck
     {
         public object Message => Event.Event;
-    
+
         public Task Ack()
         {
             return AckTo.Ask<InternalResponses.AckResponse>(new InternalCommands.Ack(Event.Position));

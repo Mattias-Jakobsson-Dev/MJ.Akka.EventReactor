@@ -34,6 +34,8 @@ public class PositionedStreamPositionKeeper : ReceivePersistentActor
     {
         _eventReactorName = eventReactorName;
         
+        Recover<Events.PositionUpdated>(On);
+        
         Command<Commands.StoreLatestPosition>(cmd =>
         {
             if (_currentPosition == null || cmd.Position > _currentPosition)
@@ -46,6 +48,8 @@ public class PositionedStreamPositionKeeper : ReceivePersistentActor
                         
                         if (LastSequenceNr % 10 == 0 && LastSequenceNr > 10)
                             DeleteMessages(LastSequenceNr - 10);
+                        
+                        Sender.Tell(new Responses.GetLatestPositionResponse(_currentPosition));
                     });
             }
         });

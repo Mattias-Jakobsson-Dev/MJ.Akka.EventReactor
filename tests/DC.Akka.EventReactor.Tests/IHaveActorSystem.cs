@@ -1,6 +1,6 @@
 using Akka.Actor;
 
-namespace DC.Akka.EventReactor.Tests.EventReactorCoordinatorTests;
+namespace DC.Akka.EventReactor.Tests;
 
 public interface IHaveActorSystem
 {

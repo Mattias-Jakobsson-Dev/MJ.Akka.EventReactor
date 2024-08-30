@@ -1,6 +1,4 @@
-using System;
 using System.Collections.Immutable;
-using System.Threading.Tasks;
 using DC.Akka.EventReactor.Setup;
 using DC.Akka.EventReactor.Tests.TestData;
 using FluentAssertions;
@@ -48,6 +46,33 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Should().HaveCount(0);
+    }
+
+    [Fact]
+    public async Task Reacting_to_event_that_is_successful_and_then_running_again()
+    {
+        using var system = actorSystemHandler.StartNewActorSystem();
+
+        var eventId = Guid.NewGuid().ToString();
+
+        var reactor = CreateReactor(ImmutableList.Create<Events.IEvent>(new Events.HandledEvent(eventId)));
+
+        var firstCoordinator = await system
+            .EventReactors(config => config
+                .WithReactor(reactor, Configure))
+            .Start();
+
+        await firstCoordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        
+        var secondCoordinator = await system
+            .EventReactors(config => config
+                .WithReactor(reactor, Configure))
+            .Start();
+
+        await secondCoordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+
+        reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
+        reactor.GetHandledEvents()[eventId].Should().Be(1);
     }
 
     protected virtual IHaveConfiguration<EventReactorInstanceConfig> Configure(

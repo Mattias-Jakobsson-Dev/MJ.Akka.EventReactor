@@ -8,6 +8,7 @@ namespace DC.Akka.EventReactor.Tests.TestData;
 public class TestReactor(IImmutableList<Events.IEvent> events) : ITestReactor
 {
     private readonly ConcurrentDictionary<string, int> _handledEvents = [];
+    private readonly ConcurrentBag<string> _eventsToSkip = [];
 
     public string Name => GetType().Name;
 
@@ -18,8 +19,8 @@ public class TestReactor(IImmutableList<Events.IEvent> events) : ITestReactor
 
     public Source<IMessageWithAck, NotUsed> StartSource()
     {
-        return Source.From(events)
-            .Select(IMessageWithAck (x) => new EventWithAck(x));
+        return Source.From(events.Where(x => !_eventsToSkip.Contains(x.EventId)))
+            .Select(IMessageWithAck (x) => new EventWithAck(x, _eventsToSkip));
     }
 
     public static ISetupEventReactor ConfigureHandlers(
@@ -32,17 +33,21 @@ public class TestReactor(IImmutableList<Events.IEvent> events) : ITestReactor
             .On<Events.EventThatFails>(evnt => throw evnt.Exception);
     }
 
-    private class EventWithAck(Events.IEvent evnt) : IMessageWithAck
+    private class EventWithAck(Events.IEvent evnt, ConcurrentBag<string> eventsToSkip) : IMessageWithAck
     {
         public object Message { get; } = evnt;
 
         public Task Ack()
         {
+            eventsToSkip.Add(evnt.EventId);
+            
             return Task.CompletedTask;
         }
 
         public Task Nack(Exception error)
         {
+            eventsToSkip.Add(evnt.EventId);
+            
             return Task.CompletedTask;
         }
     }
