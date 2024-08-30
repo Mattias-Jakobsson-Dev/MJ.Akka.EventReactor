@@ -84,8 +84,12 @@ public class PositionedStreamPublished(
 
                 if (!_inFlightMessages.Any(x => x.Key < ack.Position))
                 {
+                    var position = _inFlightMessages.Count != 0
+                        ? _inFlightMessages.Keys.Min() - 1
+                        : ack.Position;
+                    
                     GetPositionKeeper()
-                        .Tell(new PositionedStreamPositionKeeper.Commands.StoreLatestPosition(ack.Position));
+                        .Tell(new PositionedStreamPositionKeeper.Commands.StoreLatestPosition(position));
                 }
                 
                 Sender.Tell(new InternalResponses.AckResponse());
@@ -101,15 +105,18 @@ public class PositionedStreamPublished(
                 
                 var deadLetter = GetDeadLetter();
 
+                var self = Self;
+                
                 deadLetter.Ask<DeadLetterHandler.Responses.AddDeadLetterResponse>(
-                        new DeadLetterHandler.Commands.AddDeadLetter(evnt, nack.Error, nack.Position))
-                    .PipeTo(Self, Sender);
+                        new DeadLetterHandler.Commands.AddDeadLetter(evnt, nack.Error))
+                    .ContinueWith(result =>
+                    {
+                        if (result.IsCompletedSuccessfully)
+                            self.Tell(new InternalCommands.Ack(nack.Position));
+                    });
                 
                 return true;
-            case DeadLetterHandler.Responses.AddDeadLetterResponse deadLetterResponse:
-                Self.Tell(new InternalCommands.Ack(deadLetterResponse.Position));
-                
-                return true;
+
             case Request req:
                 var messagesToPush = Stash.Count > req.Count ? req.Count : Stash.Count;
                 

@@ -16,8 +16,6 @@ public class EventReactorCoordinator : ReceiveActor
 
         public record Stop;
 
-        public record Kill;
-
         public record WaitForCompletion;
     }
 
@@ -30,6 +28,8 @@ public class EventReactorCoordinator : ReceiveActor
 
     public static class Responses
     {
+        public record StartResponse;
+        
         public record WaitForCompletionResponse(Exception? Error = null);
 
         public record StopResponse;
@@ -102,10 +102,10 @@ public class EventReactorCoordinator : ReceiveActor
                 .Run(Context.System.Materializer());
 
             Become(Started);
+
+            Sender.Tell(new Responses.StartResponse());
         });
-
-        Receive<Commands.Kill>(_ => { Context.Stop(Self); });
-
+        
         Receive<Commands.Stop>(_ => { Sender.Tell(new Responses.StopResponse()); });
 
         Receive<Commands.WaitForCompletion>(_ => { _waitingForCompletion.Add(Sender); });
@@ -113,6 +113,11 @@ public class EventReactorCoordinator : ReceiveActor
 
     private void Started()
     {
+        Receive<Commands.Start>(_ =>
+        {
+            Sender.Tell(new Responses.StartResponse());
+        });
+        
         Receive<Commands.Stop>(_ =>
         {
             _logger.Info("Stopping event reactor {0}", _configuration.Name);
@@ -145,23 +150,12 @@ public class EventReactorCoordinator : ReceiveActor
 
             Become(Completed);
         });
-
-        Receive<Commands.Kill>(_ =>
-        {
-            _logger.Info("Killing projection {0}", _configuration.Name);
-
-            _killSwitch?.Shutdown();
-
-            Context.Stop(Self);
-        });
     }
 
     private void Completed()
     {
         Receive<Commands.WaitForCompletion>(_ => { Sender.Tell(new Responses.WaitForCompletionResponse()); });
-
-        Receive<Commands.Kill>(_ => { Context.Stop(Self); });
-
+        
         Receive<Commands.Stop>(_ =>
         {
             Become(Stopped);
@@ -177,20 +171,11 @@ public class EventReactorCoordinator : ReceiveActor
 
         _waitingForCompletion.Clear();
     }
-
-    protected override void PreStart()
-    {
-        Self.Tell(new Commands.Start());
-
-        base.PreStart();
-    }
-
+    
     protected override void PreRestart(Exception reason, object message)
     {
         _killSwitch?.Shutdown();
-
-        Self.Tell(new Commands.Start());
-
+        
         base.PreRestart(reason, message);
     }
 
@@ -199,6 +184,11 @@ public class EventReactorCoordinator : ReceiveActor
         _killSwitch?.Shutdown();
 
         base.PostStop();
+    }
+
+    public static Props Init(string reactorName)
+    {
+        return Props.Create(() => new EventReactorCoordinator(reactorName));
     }
 
     private static Source<NotUsed, NotUsed> MaybeCreateRestartSource(

@@ -7,12 +7,12 @@ public class DeadLetterHandler : ReceivePersistentActor
 {
     public static class Commands
     {
-        public record AddDeadLetter(object Event, Exception Error, long Position);
+        public record AddDeadLetter(object Event, Exception Error);
     }
     
     public static class Responses
     {
-        public record AddDeadLetterResponse(long Position);
+        public record AddDeadLetterResponse;
     }
     
     public static class Events
@@ -32,7 +32,7 @@ public class DeadLetterHandler : ReceivePersistentActor
             {
                 On(evnt);
                 
-                Sender.Tell(new Responses.AddDeadLetterResponse(cmd.Position));
+                Sender.Tell(new Responses.AddDeadLetterResponse());
             });
         });
     }

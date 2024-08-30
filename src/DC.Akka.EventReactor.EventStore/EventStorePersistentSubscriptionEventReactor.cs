@@ -15,7 +15,7 @@ public abstract class EventStorePersistentSubscriptionEventReactor(
 {
     public abstract string Name { get; }
 
-    public abstract void Configure(Func<ISetupEventReactor, ISetupEventReactor> config);
+    public abstract ISetupEventReactor Configure(ISetupEventReactor config);
 
     public Source<IMessageWithAck, NotUsed> StartSource()
     {
