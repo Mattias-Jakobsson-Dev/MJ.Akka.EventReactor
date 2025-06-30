@@ -39,9 +39,9 @@ test:
 
 .PHONY: package
 package: clean
-	dotnet pack ./src/DC.Akka.EventReactor -c Release -o ./.packages
-	dotnet pack ./src/DC.Akka.EventReactor.EventStore -c Release -o ./.packages
-	dotnet pack ./src/DC.Akka.EventReactor.PositionStreamSource -c Release -o ./.packages
+	dotnet pack ./src/MJ.Akka.EventReactor -c Release -o ./.packages
+	dotnet pack ./src/MJ.Akka.EventReactor.EventStore -c Release -o ./.packages
+	dotnet pack ./src/MJ.Akka.EventReactor.PositionStreamSource -c Release -o ./.packages
 
 .PHONY: publish
 publish: package
