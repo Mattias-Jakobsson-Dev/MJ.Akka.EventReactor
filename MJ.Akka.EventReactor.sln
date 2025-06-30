@@ -12,7 +12,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{6BEBB3C5
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{F541B3EB-353F-4A24-87E4-9A159F65A916}"
 	ProjectSection(SolutionItems) = preProject
+	README.md = README.md
 		Makefile = Makefile
+		LICENSE = LICENSE
+        .github\workflows\publish-to-nuget.yml = .github\workflows\publish-to-nuget.yml
+                                .github\workflows\test-pull-requests.yml = .github\workflows\test-pull-requests.yml
+                                .github\main.workflow = .github\main.workflow
+                                .gitignore = .gitignore
 	EndProjectSection
 EndProject
 Global
