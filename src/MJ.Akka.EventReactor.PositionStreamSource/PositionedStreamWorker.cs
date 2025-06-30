@@ -50,16 +50,14 @@ public class PositionedStreamWorker(IActorRef publisher) : ActorPublisher<IMessa
 
         public Task Ack()
         {
-            AckTo.Tell(new PositionedStreamPublisher.Commands.Ack(Event.Position));
-
-            return Task.CompletedTask;
+            return AckTo.Ask<PositionedStreamPublisher.Responses.AckNackResponse>(
+                new PositionedStreamPublisher.Commands.Ack(Event.Position));
         }
 
         public Task Nack(Exception error)
         {
-            AckTo.Tell(new PositionedStreamPublisher.Commands.Nack(Event.Position, error));
-
-            return Task.CompletedTask;
+            return AckTo.Ask<PositionedStreamPublisher.Responses.AckNackResponse>(
+                new PositionedStreamPublisher.Commands.Nack(Event.Position, error));
         }
     }
 }

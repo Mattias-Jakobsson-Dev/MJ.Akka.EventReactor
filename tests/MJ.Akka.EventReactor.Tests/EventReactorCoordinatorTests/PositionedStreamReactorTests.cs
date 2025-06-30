@@ -43,7 +43,7 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
 
         public async Task<IImmutableList<string>> GetDeadLetters(ActorSystem actorSystem)
         {
-            return (await StoredEventsLoader.GetEventsFrom(actorSystem, $"dead-letters-{Name}"))
+            return (await StoredEventsLoader.GetEventsFrom(actorSystem, $"event-reactor-dead-letters-{Name}"))
                 .OfType<DeadLetterHandler.Events.DeadLetterAdded>()
                 .Select(x => x.Event)
                 .OfType<Events.IEvent>()

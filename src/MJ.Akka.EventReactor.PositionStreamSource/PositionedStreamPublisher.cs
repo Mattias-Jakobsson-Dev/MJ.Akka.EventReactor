@@ -45,6 +45,8 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
         public record FailureRequestResponse(Exception Failure) : IRequestResponse;
 
         public record CompletedRequestResponse : IRequestResponse;
+
+        public record AckNackResponse;
     }
 
     public static class Events
@@ -71,7 +73,7 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
         Become(NotStarted);
     }
 
-    public override string PersistenceId => $"position-stream-publisher-{_eventReactorName}";
+    public override string PersistenceId => $"event-reactor-position-stream-publisher-{_eventReactorName}";
 
     public ITimerScheduler Timers { get; set; } = null!;
 
@@ -199,25 +201,32 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
 
             if (_inFlightMessages.Count == 0 && _shouldComplete)
                 CompleteGraph(cancellation);
+            
+            DeferAsync("done", _ => Sender.Tell(new Responses.AckNackResponse()));
         });
 
         Command<Commands.Nack>(cmd =>
         {
             Timers.Cancel($"timeout-{cmd.Position}");
 
-            if (!_inFlightMessages.TryGetValue(cmd.Position, out var evnt)) 
+            if (!_inFlightMessages.TryGetValue(cmd.Position, out var evnt))
+            {
+                Sender.Tell(new Responses.AckNackResponse());
+                
                 return;
+            }
             
             var self = Self;
-
+            var sender = Sender;
+            
             GetDeadLetter().Ask<DeadLetterHandler.Responses.AddDeadLetterResponse>(
                     new DeadLetterHandler.Commands.AddDeadLetter(evnt, cmd.Error))
                 .ContinueWith(result =>
                 {
                     if (result.IsCompletedSuccessfully)
-                        self.Tell(new Commands.Ack(cmd.Position));
+                        self.Tell(new Commands.Ack(cmd.Position), sender);
                     else
-                        self.Tell(cmd);
+                        self.Tell(cmd, sender);
                 });
         });
 

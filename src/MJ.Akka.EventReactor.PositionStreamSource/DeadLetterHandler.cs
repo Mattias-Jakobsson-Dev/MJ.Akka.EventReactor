@@ -40,7 +40,7 @@ public class DeadLetterHandler : ReceivePersistentActor
         });
     }
 
-    public override string PersistenceId => $"dead-letters-{_eventReactorName}";
+    public override string PersistenceId => $"event-reactor-dead-letters-{_eventReactorName}";
 
     public static Props Init(string eventReactorName)
     {
