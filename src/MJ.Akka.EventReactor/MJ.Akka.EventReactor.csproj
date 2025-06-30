@@ -1,0 +1,24 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <PropertyGroup>
+        <Copyright>Copyright © 2025 Mattias Jakobsson</Copyright>
+        <Authors>Mattias Jakobsson</Authors>
+        <Version>0.1.0</Version>
+        <PackageProjectUrl>
+            https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor
+        </PackageProjectUrl>
+        <PackageTags>akka</PackageTags>
+        <PackageLicenseUrl>https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor/blob/master/LICENSE</PackageLicenseUrl>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Akka.Streams" Version="1.5.44" />
+    </ItemGroup>
+
+</Project>

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.44" />
+      <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\..\src\MJ.Akka.EventReactor.EventStore\MJ.Akka.EventReactor.EventStore.csproj" />
+      <ProjectReference Include="..\..\src\MJ.Akka.EventReactor.PositionStreamSource\MJ.Akka.EventReactor.PositionStreamSource.csproj" />
+    </ItemGroup>
+
+</Project>
