@@ -58,18 +58,20 @@ public class EventReactorCoordinator : ReceiveActor
 
     private void Stopped()
     {
-        Receive<Commands.Start>(_ =>
+        ReceiveAsync<Commands.Start>(async _ =>
         {
             _logger.Info("Starting event reactor {0}", _configuration.Name);
 
+            var source = await _configuration.GetSource();
+            
             _killSwitch = MaybeCreateRestartSource(() =>
                 {
                     _logger.Info("Starting event reactor source for {0}", _configuration.Name);
 
                     var cancellation = new CancellationTokenSource();
 
-                    return _configuration
-                        .StartSource()
+                    return source
+                        .Start()
                         .SelectAsyncUnordered(
                             100,
                             async msg =>

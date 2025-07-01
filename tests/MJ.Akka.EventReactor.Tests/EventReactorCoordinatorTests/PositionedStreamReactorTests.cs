@@ -36,11 +36,12 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
             return TestReactor.ConfigureHandlers(config, _handledEvents);
         }
 
-        public IEventReactorEventSource GetSource()
+        public Task<IEventReactorEventSource> GetSource()
         {
-            return new PositionedStreamEventReactorEventSource(
+            return Task.FromResult<IEventReactorEventSource>(new PositionedStreamEventReactorEventSource(
                 new PositionStreamStarter(events),
-                actorSystem);
+                actorSystem,
+                this));
         }
         
         public async Task<IImmutableList<string>> GetDeadLetters()

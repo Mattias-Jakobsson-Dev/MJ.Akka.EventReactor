@@ -6,5 +6,5 @@ public interface IEventReactor
 
     ISetupEventReactor Configure(ISetupEventReactor config);
 
-    IEventReactorEventSource GetSource();
+    Task<IEventReactorEventSource> GetSource();
 }

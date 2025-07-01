@@ -40,7 +40,7 @@ public class EventStoreReactorEventSource(
         
     }
     
-    public Source<IMessageWithAck, NotUsed> Start(IEventReactor reactor)
+    public Source<IMessageWithAck, NotUsed> Start()
     {
         return EventStoreSource
             .ForPersistentSubscription(

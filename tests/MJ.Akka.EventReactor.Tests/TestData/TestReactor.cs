@@ -17,9 +17,9 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
         return ConfigureHandlers(config, _handledEvents);
     }
 
-    public IEventReactorEventSource GetSource()
+    public Task<IEventReactorEventSource> GetSource()
     {
-        return _eventSource;
+        return Task.FromResult<IEventReactorEventSource>(_eventSource);
     }
     
     public static ISetupEventReactor ConfigureHandlers(
@@ -47,7 +47,7 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
         private readonly ConcurrentBag<string> _deadLetters = [];
         private readonly ConcurrentBag<string> _eventsToSkip = [];
         
-        public Source<IMessageWithAck, NotUsed> Start(IEventReactor reactor)
+        public Source<IMessageWithAck, NotUsed> Start()
         {
             return Source.From(events.Where(x => !_eventsToSkip.Contains(x.EventId)))
                 .Select(IMessageWithAck (x) => new EventWithAck(x, _eventsToSkip, _deadLetters));

@@ -1,6 +1,4 @@
-using Akka;
 using Akka.Streams;
-using Akka.Streams.Dsl;
 
 namespace MJ.Akka.EventReactor.Configuration;
 
@@ -12,9 +10,9 @@ public class EventReactorConfiguration(
     public string Name { get; } = eventReactor.Name;
     public RestartSettings? RestartSettings { get; } = restartSettings;
 
-    public Source<IMessageWithAck, NotUsed> StartSource()
+    public Task<IEventReactorEventSource> GetSource()
     {
-        return eventReactor.GetSource().Start(eventReactor);
+        return eventReactor.GetSource();
     }
     
     public Task Handle(object evnt, CancellationToken cancellationToken)
