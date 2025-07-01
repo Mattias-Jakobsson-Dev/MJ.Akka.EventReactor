@@ -1,23 +1,46 @@
 ﻿using Akka;
+using Akka.Persistence.EventStore.Serialization;
 using Akka.Persistence.EventStore.Streams;
 using Akka.Streams.Dsl;
 using EventStore.Client;
+using JetBrains.Annotations;
 
 namespace MJ.Akka.EventReactor.EventStore;
 
-public abstract class EventStorePersistentSubscriptionEventReactor(
+[PublicAPI]
+public class EventStoreReactorEventSource(
     EventStorePersistentSubscriptionsClient client,
     string streamName,
     string groupName,
+    Func<ResolvedEvent, Task<object?>> deSerialize,
     int maxBufferSize = 500,
     bool keepReconnecting = false,
-    int serializationParallelism = 10) : IEventReactor
+    int serializationParallelism = 10) : IEventReactorEventSource
 {
-    public abstract string Name { get; }
-
-    public abstract ISetupEventReactor Configure(ISetupEventReactor config);
-
-    public Source<IMessageWithAck, NotUsed> StartSource()
+    public EventStoreReactorEventSource(
+        EventStorePersistentSubscriptionsClient client,
+        string streamName,
+        string groupName,
+        IMessageAdapter adapter,
+        int maxBufferSize = 500,
+        bool keepReconnecting = false,
+        int serializationParallelism = 10) : this(
+        client,
+        streamName,
+        groupName,
+        async evnt =>
+        {
+            var result = await adapter.AdaptEvent(evnt);
+            return result?.Payload;
+        },
+        maxBufferSize,
+        keepReconnecting,
+        serializationParallelism)
+    {
+        
+    }
+    
+    public Source<IMessageWithAck, NotUsed> Start(IEventReactor reactor)
     {
         return EventStoreSource
             .ForPersistentSubscription(
@@ -30,7 +53,7 @@ public abstract class EventStorePersistentSubscriptionEventReactor(
                 serializationParallelism,
                 async evnt => new
                 {
-                    DeSerializedEvent = await DeSerialize(evnt.Event),
+                    DeSerializedEvent = await deSerialize(evnt.Event),
                     SourceEvent = evnt
                 })
             .Where(x => x.DeSerializedEvent != null)
@@ -39,9 +62,7 @@ public abstract class EventStorePersistentSubscriptionEventReactor(
                 x.SourceEvent.Ack,
                 e => x.SourceEvent.Nack(e.Message)));
     }
-
-    protected abstract Task<object?> DeSerialize(ResolvedEvent evnt);
-
+    
     private class EventStoreMessage(object message, Func<Task> ack, Func<Exception, Task> nack) : IMessageWithAck
     {
         public object Message { get; } = message;

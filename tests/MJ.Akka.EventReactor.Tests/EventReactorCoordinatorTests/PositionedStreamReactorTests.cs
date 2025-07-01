@@ -25,23 +25,25 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
         IImmutableList<Events.IEvent> events,
         ActorSystem actorSystem, 
         string? name = null) 
-        : EventReactorWithPositionedStream(actorSystem), ITestReactor
+        : ITestReactor
     {
         private readonly ConcurrentDictionary<string, int> _handledEvents = [];
         
-        public override string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
+        public string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
         
-        public override ISetupEventReactor Configure(ISetupEventReactor config)
+        public ISetupEventReactor Configure(ISetupEventReactor config)
         {
             return TestReactor.ConfigureHandlers(config, _handledEvents);
         }
 
-        protected override IStartPositionStream GetStreamSource()
+        public IEventReactorEventSource GetSource()
         {
-            return new PositionStreamStarter(events);
+            return new PositionedStreamEventReactorEventSource(
+                new PositionStreamStarter(events),
+                actorSystem);
         }
-
-        public async Task<IImmutableList<string>> GetDeadLetters(ActorSystem actorSystem)
+        
+        public async Task<IImmutableList<string>> GetDeadLetters()
         {
             return (await StoredEventsLoader.GetEventsFrom(actorSystem, $"event-reactor-dead-letters-{Name}"))
                 .OfType<DeadLetterHandler.Events.DeadLetterAdded>()

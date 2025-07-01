@@ -14,7 +14,7 @@ public class EventReactorConfiguration(
 
     public Source<IMessageWithAck, NotUsed> StartSource()
     {
-        return eventReactor.StartSource();
+        return eventReactor.GetSource().Start(eventReactor);
     }
     
     public Task Handle(object evnt, CancellationToken cancellationToken)

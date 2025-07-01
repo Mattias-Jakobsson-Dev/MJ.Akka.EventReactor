@@ -1,6 +1,3 @@
-using Akka;
-using Akka.Streams.Dsl;
-
 namespace MJ.Akka.EventReactor;
 
 public interface IEventReactor
@@ -9,5 +6,5 @@ public interface IEventReactor
 
     ISetupEventReactor Configure(ISetupEventReactor config);
 
-    Source<IMessageWithAck, NotUsed> StartSource();
+    IEventReactorEventSource GetSource();
 }

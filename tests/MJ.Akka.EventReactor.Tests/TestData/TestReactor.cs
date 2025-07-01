@@ -1,7 +1,6 @@
 using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Akka;
-using Akka.Actor;
 using Akka.Streams.Dsl;
 
 namespace MJ.Akka.EventReactor.Tests.TestData;
@@ -9,8 +8,7 @@ namespace MJ.Akka.EventReactor.Tests.TestData;
 public class TestReactor(IImmutableList<Events.IEvent> events, string? name = null) : ITestReactor
 {
     private readonly ConcurrentDictionary<string, int> _handledEvents = [];
-    private readonly ConcurrentBag<string> _deadLetters = [];
-    private readonly ConcurrentBag<string> _eventsToSkip = [];
+    private readonly EventSource _eventSource = new(events);
 
     public string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
 
@@ -19,12 +17,11 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
         return ConfigureHandlers(config, _handledEvents);
     }
 
-    public Source<IMessageWithAck, NotUsed> StartSource()
+    public IEventReactorEventSource GetSource()
     {
-        return Source.From(events.Where(x => !_eventsToSkip.Contains(x.EventId)))
-            .Select(IMessageWithAck (x) => new EventWithAck(x, _eventsToSkip, _deadLetters));
+        return _eventSource;
     }
-
+    
     public static ISetupEventReactor ConfigureHandlers(
         ISetupEventReactor config,
         ConcurrentDictionary<string, int> handledEvents)
@@ -35,9 +32,9 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
             .On<Events.EventThatFails>(evnt => throw evnt.Exception);
     }
     
-    public Task<IImmutableList<string>> GetDeadLetters(ActorSystem actorSystem)
+    public Task<IImmutableList<string>> GetDeadLetters()
     {
-        return Task.FromResult<IImmutableList<string>>(_deadLetters.ToImmutableList());
+        return Task.FromResult(_eventSource.GetDeadLetters());
     }
 
     public IImmutableDictionary<string, int> GetHandledEvents()
@@ -45,6 +42,23 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
         return _handledEvents.ToImmutableDictionary();
     }
 
+    private class EventSource(IImmutableList<Events.IEvent> events) : IEventReactorEventSource
+    {
+        private readonly ConcurrentBag<string> _deadLetters = [];
+        private readonly ConcurrentBag<string> _eventsToSkip = [];
+        
+        public Source<IMessageWithAck, NotUsed> Start(IEventReactor reactor)
+        {
+            return Source.From(events.Where(x => !_eventsToSkip.Contains(x.EventId)))
+                .Select(IMessageWithAck (x) => new EventWithAck(x, _eventsToSkip, _deadLetters));
+        }
+        
+        public IImmutableList<string> GetDeadLetters()
+        {
+            return _deadLetters.ToImmutableList();
+        }
+    }
+    
     private class EventWithAck(
         Events.IEvent evnt,
         ConcurrentBag<string> eventsToSkip,

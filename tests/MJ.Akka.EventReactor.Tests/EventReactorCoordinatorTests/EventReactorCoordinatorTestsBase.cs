@@ -29,7 +29,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-        (await reactor.GetDeadLetters(system)).Should().BeEmpty();
+        (await reactor.GetDeadLetters()).Should().BeEmpty();
     }
 
     [Fact]
@@ -62,11 +62,11 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         firstReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(firstEventId));
         firstReactor.GetHandledEvents()[firstEventId].Should().Be(1);
-        (await firstReactor.GetDeadLetters(system)).Should().BeEmpty();
+        (await firstReactor.GetDeadLetters()).Should().BeEmpty();
         
         secondReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(secondEventId));
         secondReactor.GetHandledEvents()[secondEventId].Should().Be(1);
-        (await secondReactor.GetDeadLetters(system)).Should().BeEmpty();
+        (await secondReactor.GetDeadLetters()).Should().BeEmpty();
     }
 
     [Fact]
@@ -87,7 +87,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Should().HaveCount(0);
-        (await reactor.GetDeadLetters(system)).Should().BeEquivalentTo(ImmutableList.Create(eventId));
+        (await reactor.GetDeadLetters()).Should().BeEquivalentTo(ImmutableList.Create(eventId));
     }
 
     [Fact]
@@ -117,7 +117,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-        (await reactor.GetDeadLetters(system)).Should().BeEmpty();
+        (await reactor.GetDeadLetters()).Should().BeEmpty();
     }
 
     [Theory]
@@ -160,7 +160,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         foreach (var successfulEvent in successfulEvents)
             reactor.GetHandledEvents()[successfulEvent].Should().Be(1);
 
-        (await reactor.GetDeadLetters(system)).Should().BeEquivalentTo(failureEvents);
+        (await reactor.GetDeadLetters()).Should().BeEquivalentTo(failureEvents);
     }
 
     protected virtual IHaveConfiguration<EventReactorInstanceConfig> Configure(
