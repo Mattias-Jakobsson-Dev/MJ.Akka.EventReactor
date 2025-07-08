@@ -9,20 +9,20 @@
     <PropertyGroup>
         <Copyright>Copyright © 2025 Mattias Jakobsson</Copyright>
         <Authors>Mattias Jakobsson</Authors>
-        <Version>0.4.0</Version>
+        <Version>0.1.0</Version>
         <PackageProjectUrl>
-            https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor.PositionStreamSource
+            https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor.RabbitMq
         </PackageProjectUrl>
         <PackageTags>akka</PackageTags>
         <PackageLicenseUrl>https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor/blob/master/LICENSE</PackageLicenseUrl>
     </PropertyGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MJ.Akka.EventReactor\MJ.Akka.EventReactor.csproj" />
+        <ProjectReference Include="..\MJ.Akka.EventReactor\MJ.Akka.EventReactor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <PackageReference Include="Akka.Persistence" Version="1.5.44" />
+      <PackageReference Include="Akka.Streams.Amqp.RabbitMq" Version="1.5.40" />
         <PackageReference Include="JetBrains.Annotations" Version="2024.3.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>

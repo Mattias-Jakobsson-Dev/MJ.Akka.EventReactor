@@ -15,11 +15,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{F541B3EB
 	README.md = README.md
 		Makefile = Makefile
 		LICENSE = LICENSE
-        .github\workflows\publish-to-nuget.yml = .github\workflows\publish-to-nuget.yml
-                                .github\workflows\test-pull-requests.yml = .github\workflows\test-pull-requests.yml
-                                .github\main.workflow = .github\main.workflow
-                                .gitignore = .gitignore
+								.github\workflows\publish-to-nuget.yml = .github\workflows\publish-to-nuget.yml
+																																.github\workflows\test-pull-requests.yml = .github\workflows\test-pull-requests.yml
+																																.github\main.workflow = .github\main.workflow
+																																.gitignore = .gitignore
 	EndProjectSection
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.RabbitMq", "src\MJ.Akka.EventReactor.RabbitMq\MJ.Akka.EventReactor.RabbitMq.csproj", "{C7CC5959-A243-43B5-9225-EE1ADD0BE448}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -43,6 +45,10 @@ Global
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7} = {6BEBB3C5-A479-4495-A7F5-39F03165A319}

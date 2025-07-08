@@ -42,6 +42,7 @@ package: clean
 	dotnet pack ./src/MJ.Akka.EventReactor -c Release -o ./.packages
 	dotnet pack ./src/MJ.Akka.EventReactor.EventStore -c Release -o ./.packages
 	dotnet pack ./src/MJ.Akka.EventReactor.PositionStreamSource -c Release -o ./.packages
+	dotnet pack ./src/MJ.Akka.EventReactor.RabbitMq -c Release -o ./.packages
 
 .PHONY: publish
 publish: package

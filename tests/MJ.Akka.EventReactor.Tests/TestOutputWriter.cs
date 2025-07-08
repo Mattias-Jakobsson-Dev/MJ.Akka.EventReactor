@@ -11,7 +11,7 @@ public class TestOutputWriter : IOutputWriter
 {
     private readonly Writer _writer = new();
     
-    public Sink<IImmutableList<object>, NotUsed> CreateSink()
+    public Sink<object, NotUsed> CreateSink()
     {
         return Sink.FromWriter(_writer, true);
     }
@@ -21,16 +21,13 @@ public class TestOutputWriter : IOutputWriter
         return _writer.GetItems();
     }
     
-    private class Writer : ChannelWriter<IImmutableList<object>>
+    private class Writer : ChannelWriter<object>
     {
         private readonly ConcurrentBag<object> _items = [];
         
-        public override bool TryWrite(IImmutableList<object> item)
+        public override bool TryWrite(object item)
         {
-            foreach (var result in item)
-            {
-                _items.Add(result);
-            }
+            _items.Add(item);
 
             return true;
         }

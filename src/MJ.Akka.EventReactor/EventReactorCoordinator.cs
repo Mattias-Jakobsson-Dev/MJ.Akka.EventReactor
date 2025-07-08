@@ -64,8 +64,8 @@ public class EventReactorCoordinator : ReceiveActor
 
             var self = Self;
             
-            var sinks = ImmutableList.Create<Sink<IImmutableList<object>, NotUsed>>(
-                Sink.OnComplete<IImmutableList<object>>(
+            var sinks = ImmutableList.Create<Sink<object, NotUsed>>(
+                Sink.OnComplete<object>(
                     () => self.Tell(new InternalCommands.Complete()),
                     ex => self.Tell(new InternalCommands.Fail(ex))))
                 .AddRange(_configuration.OutputWriters.Select(x => x.CreateSink()));
@@ -103,10 +103,11 @@ public class EventReactorCoordinator : ReceiveActor
                             cancellation.Cancel();
 
                             return Option<IImmutableList<object>>.None;
-                        });
+                        })
+                        .SelectMany(items => items);
                 }, _configuration.RestartSettings)
-                .ViaMaterialized(KillSwitches.Single<IImmutableList<object>>(), Keep.Right)
-                .ToMaterialized(sinks.Combine(i => new Broadcast<IImmutableList<object>>(i)), Keep.Left)
+                .ViaMaterialized(KillSwitches.Single<object>(), Keep.Right)
+                .ToMaterialized(sinks.Combine(i => new Broadcast<object>(i)), Keep.Left)
                 .Run(Context.System.Materializer());
 
             Become(Started);
@@ -199,8 +200,8 @@ public class EventReactorCoordinator : ReceiveActor
         return Props.Create(() => new EventReactorCoordinator(configSupplier));
     }
 
-    private static Source<IImmutableList<object>, NotUsed> MaybeCreateRestartSource(
-        Func<Source<IImmutableList<object>, NotUsed>> createSource,
+    private static Source<object, NotUsed> MaybeCreateRestartSource(
+        Func<Source<object, NotUsed>> createSource,
         RestartSettings? restartSettings)
     {
         return restartSettings != null
