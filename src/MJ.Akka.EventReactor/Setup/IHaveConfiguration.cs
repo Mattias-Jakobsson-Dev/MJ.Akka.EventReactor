@@ -1,4 +1,5 @@
 using Akka.Actor;
+using MJ.Akka.EventReactor.Configuration;
 
 namespace MJ.Akka.EventReactor.Setup;
 

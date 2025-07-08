@@ -2,6 +2,7 @@ using System.Collections.Immutable;
 using Akka.Actor;
 using MJ.Akka.EventReactor.Setup;
 using FluentAssertions;
+using MJ.Akka.EventReactor.Configuration;
 using MJ.Akka.EventReactor.Tests.TestData;
 using Xunit;
 

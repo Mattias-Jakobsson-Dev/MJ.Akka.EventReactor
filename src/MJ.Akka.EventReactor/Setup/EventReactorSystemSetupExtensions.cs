@@ -31,6 +31,7 @@ public static class EventReactorSystemSetupExtensions
                         return new EventReactorConfiguration(
                             eventReactor,
                             instanceConfig.RestartSettings,
+                            instanceConfig.Parallelism ?? 100,
                             instanceConfig.CreateHandler!(eventHandlers));
                     }))
             });

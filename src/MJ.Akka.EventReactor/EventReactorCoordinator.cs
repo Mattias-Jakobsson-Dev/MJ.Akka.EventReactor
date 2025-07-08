@@ -70,7 +70,7 @@ public class EventReactorCoordinator : ReceiveActor
                     return source
                         .Start()
                         .SelectAsyncUnordered(
-                            100,
+                            _configuration.Parallelism,
                             async msg =>
                             {
                                 try
