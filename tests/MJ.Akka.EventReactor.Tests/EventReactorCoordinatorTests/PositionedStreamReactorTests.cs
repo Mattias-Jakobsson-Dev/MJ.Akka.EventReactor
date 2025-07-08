@@ -5,6 +5,7 @@ using Akka.Actor;
 using Akka.Persistence;
 using Akka.Streams.Dsl;
 using MJ.Akka.EventReactor.PositionStreamSource;
+using MJ.Akka.EventReactor.Setup;
 using MJ.Akka.EventReactor.Tests.TestData;
 using Xunit;
 

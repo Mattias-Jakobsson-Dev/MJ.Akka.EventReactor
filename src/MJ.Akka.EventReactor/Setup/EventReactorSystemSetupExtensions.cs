@@ -25,49 +25,90 @@ public static class EventReactorSystemSetupExtensions
                             .MergeWith(systemConfig);
 
                         var eventHandlers = eventReactor
-                            .Configure(EventReactorSetup.Empty)
+                            .Configure(new EventReactorSetup())
                             .Build();
 
                         return new EventReactorConfiguration(
                             eventReactor,
                             instanceConfig.RestartSettings,
                             instanceConfig.Parallelism ?? 100,
+                            instanceConfig.OutputWriters,
                             instanceConfig.CreateHandler!(eventHandlers));
                     }))
             });
     }
 
-    private record EventReactorSetup(IImmutableDictionary<Type, Func<object, CancellationToken, Task>> Handlers)
-        : ISetupEventReactor
+    private class EventReactorSetup : ISetupEventReactor
     {
-        public static EventReactorSetup Empty { get; } =
-            new(ImmutableDictionary<Type, Func<object, CancellationToken, Task>>.Empty);
-
-        public ISetupEventReactor On<TEvent>(Action<TEvent> handler)
+        private readonly Dictionary<Type, IEventReactorBuilder> _builders = new();
+        
+        public ISetupEventReactorFor<TEvent> On<TEvent>()
         {
-            return On<TEvent>(evnt =>
+            if (_builders.TryGetValue(typeof(TEvent), out var existingBuilder))
             {
-                handler(evnt);
+                return (ISetupEventReactorFor<TEvent>)existingBuilder;
+            }
 
-                return Task.CompletedTask;
-            });
+            var newBuilder = new EventReactorSetupFor<TEvent>(this);
+            
+            _builders[typeof(TEvent)] = newBuilder;
+
+            return newBuilder;
         }
 
-        public ISetupEventReactor On<TEvent>(Func<TEvent, Task> handler)
+        public IImmutableDictionary<Type, Func<object, CancellationToken, Task<IImmutableList<object>>>> Build()
         {
-            return On<TEvent>((evnt, _) => handler(evnt));
+            return _builders
+                .ToImmutableDictionary(
+                    x => x.Key,
+                    x => x.Value.CreateReactor());
         }
-
-        public ISetupEventReactor On<TEvent>(Func<TEvent, CancellationToken, Task> handler)
+        
+        private class EventReactorSetupFor<TEvent>(ISetupEventReactor parent) 
+            : ISetupEventReactorFor<TEvent>, IEventReactorBuilder
         {
-            return new EventReactorSetup(
-                Handlers.SetItem(typeof(TEvent), (evnt, token) => handler((TEvent)evnt, token)));
-        }
+            private readonly List<Func<TEvent, CancellationToken, Task<IImmutableList<object>>>> _handlers = [];
+            
+            public ISetupEventReactorFor<TEvent> HandleWith(
+                Func<TEvent, CancellationToken, Task<IImmutableList<object>>> handler)
+            {
+                _handlers.Add(handler);
 
-        public IImmutableDictionary<Type, Func<object, CancellationToken, Task>> Build()
-        {
-            return Handlers;
+                return this;
+            }
+
+            public ISetupEventReactorFor<TNewEvent> On<TNewEvent>()
+            {
+                return parent.On<TNewEvent>();
+            }
+
+            public IImmutableDictionary<Type, Func<object, CancellationToken, Task<IImmutableList<object>>>> Build()
+            {
+                return parent.Build();
+            }
+
+            public Func<object, CancellationToken, Task<IImmutableList<object>>> CreateReactor()
+            {
+                return async (evnt, cancellationToken) =>
+                {
+                    var results = ImmutableList.CreateBuilder<object>();
+                    
+                    foreach (var handler in _handlers)
+                    {
+                        var result = await handler((TEvent)evnt, cancellationToken);
+                        
+                        results.AddRange(result);
+                    }
+
+                    return results.ToImmutable();
+                };
+            }
         }
+    }
+    
+    private interface IEventReactorBuilder
+    {
+        Func<object, CancellationToken, Task<IImmutableList<object>>> CreateReactor();
     }
 
     private record ProjectionInstanceConfigSetup(ActorSystem ActorSystem, EventReactorInstanceConfig Config)

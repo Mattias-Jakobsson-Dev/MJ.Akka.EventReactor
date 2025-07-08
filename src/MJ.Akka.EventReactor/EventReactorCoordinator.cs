@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Akka;
 using Akka.Actor;
 using Akka.Event;
@@ -60,7 +61,15 @@ public class EventReactorCoordinator : ReceiveActor
             _logger.Info("Starting event reactor {0}", _configuration.Name);
 
             var source = await _configuration.GetSource();
+
+            var self = Self;
             
+            var sinks = ImmutableList.Create<Sink<IImmutableList<object>, NotUsed>>(
+                Sink.OnComplete<IImmutableList<object>>(
+                    () => self.Tell(new InternalCommands.Complete()),
+                    ex => self.Tell(new InternalCommands.Fail(ex))))
+                .AddRange(_configuration.OutputWriters.Select(x => x.CreateSink()));
+
             _killSwitch = MaybeCreateRestartSource(() =>
                 {
                     _logger.Info("Starting event reactor source for {0}", _configuration.Name);
@@ -75,29 +84,29 @@ public class EventReactorCoordinator : ReceiveActor
                             {
                                 try
                                 {
-                                    await _configuration.Handle(msg.Message, cancellation.Token);
+                                    var result = await _configuration
+                                        .Handle(msg.Message, cancellation.Token);
 
-                                    await msg.Ack();
+                                    await msg.Ack(cancellation.Token);
+
+                                    return result;
                                 }
                                 catch (Exception e)
                                 {
-                                    await msg.Nack(e);
+                                    await msg.Nack(e, cancellation.Token);
                                 }
 
-                                return NotUsed.Instance;
+                                return ImmutableList<object>.Empty;
                             })
                         .Recover(_ =>
                         {
                             cancellation.Cancel();
 
-                            return Option<NotUsed>.None;
+                            return Option<IImmutableList<object>>.None;
                         });
                 }, _configuration.RestartSettings)
-                .ViaMaterialized(KillSwitches.Single<NotUsed>(), Keep.Right)
-                .ToMaterialized(Sink.ActorRef<NotUsed>(
-                    Self,
-                    new InternalCommands.Complete(),
-                    ex => new InternalCommands.Fail(ex)), Keep.Left)
+                .ViaMaterialized(KillSwitches.Single<IImmutableList<object>>(), Keep.Right)
+                .ToMaterialized(sinks.Combine(i => new Broadcast<IImmutableList<object>>(i)), Keep.Left)
                 .Run(Context.System.Materializer());
 
             Become(Started);
@@ -190,8 +199,8 @@ public class EventReactorCoordinator : ReceiveActor
         return Props.Create(() => new EventReactorCoordinator(configSupplier));
     }
 
-    private static Source<NotUsed, NotUsed> MaybeCreateRestartSource(
-        Func<Source<NotUsed, NotUsed>> createSource,
+    private static Source<IImmutableList<object>, NotUsed> MaybeCreateRestartSource(
+        Func<Source<IImmutableList<object>, NotUsed>> createSource,
         RestartSettings? restartSettings)
     {
         return restartSettings != null

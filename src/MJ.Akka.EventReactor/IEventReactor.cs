@@ -1,3 +1,5 @@
+using MJ.Akka.EventReactor.Setup;
+
 namespace MJ.Akka.EventReactor;
 
 public interface IEventReactor

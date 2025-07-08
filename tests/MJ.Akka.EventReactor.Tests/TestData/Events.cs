@@ -1,3 +1,5 @@
+using System.Collections.Immutable;
+
 namespace MJ.Akka.EventReactor.Tests.TestData;
 
 public static class Events
@@ -7,6 +9,8 @@ public static class Events
     public record UnHandledEvent(string EventId) : IEvent;
 
     public record EventThatFails(string EventId, Exception Exception) : IEvent;
+
+    public record TransformInto(string EventId, IImmutableList<object> Results) : IEvent;
     
     public interface IEvent
     {

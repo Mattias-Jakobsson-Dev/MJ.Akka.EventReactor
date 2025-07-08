@@ -6,4 +6,5 @@ namespace MJ.Akka.EventReactor.Configuration;
 public abstract record EventReactorConfig(
     RestartSettings? RestartSettings,
     int? Parallelism,
-    Func<IImmutableDictionary<Type, Func<object, CancellationToken, Task>>, IReactToEvent>? CreateHandler);
+    IImmutableList<IOutputWriter> OutputWriters,
+    Func<IImmutableDictionary<Type, Func<object, CancellationToken, Task<IImmutableList<object>>>>, IReactToEvent>? CreateHandler);

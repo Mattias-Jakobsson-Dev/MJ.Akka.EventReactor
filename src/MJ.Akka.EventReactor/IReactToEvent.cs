@@ -1,6 +1,8 @@
+using System.Collections.Immutable;
+
 namespace MJ.Akka.EventReactor;
 
 public interface IReactToEvent
 {
-    Task Handle(object evnt, CancellationToken cancellationToken);
+    Task<IImmutableList<object>> Handle(object evnt, CancellationToken cancellationToken);
 }

@@ -67,13 +67,17 @@ public class EventStoreReactorEventSource(
     {
         public object Message { get; } = message;
 
-        public Task Ack()
+        public Task Ack(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             return ack();
         }
 
-        public Task Nack(Exception error)
+        public Task Nack(Exception error, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             return nack(error);
         }
     }

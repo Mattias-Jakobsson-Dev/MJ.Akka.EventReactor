@@ -4,6 +4,6 @@ public interface IMessageWithAck
 {
     object Message { get; }
     
-    Task Ack();
-    Task Nack(Exception error);
+    Task Ack(CancellationToken cancellationToken);
+    Task Nack(Exception error, CancellationToken cancellationToken);
 }

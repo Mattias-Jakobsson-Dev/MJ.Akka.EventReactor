@@ -2,6 +2,7 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Akka;
 using Akka.Streams.Dsl;
+using MJ.Akka.EventReactor.Setup;
 
 namespace MJ.Akka.EventReactor.Tests.TestData;
 
@@ -27,9 +28,15 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
         ConcurrentDictionary<string, int> handledEvents)
     {
         return config
-            .On<Events.HandledEvent>(evnt => handledEvents
+            .On<Events.HandledEvent>()
+            .ReactWith(evnt => handledEvents
                 .AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1))
-            .On<Events.EventThatFails>(evnt => throw evnt.Exception);
+            .On<Events.EventThatFails>()
+            .ReactWith(evnt => throw evnt.Exception)
+            .On<Events.TransformInto>()
+            .ReactWith(evnt => handledEvents
+                .AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1))
+            .TransformWith(evnt => evnt.Results);
     }
     
     public Task<IImmutableList<string>> GetDeadLetters()
@@ -66,15 +73,19 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
     {
         public object Message { get; } = evnt;
 
-        public Task Ack()
+        public Task Ack(CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             eventsToSkip.Add(evnt.EventId);
             
             return Task.CompletedTask;
         }
 
-        public Task Nack(Exception error)
+        public Task Nack(Exception error, CancellationToken cancellationToken)
         {
+            cancellationToken.ThrowIfCancellationRequested();
+            
             eventsToSkip.Add(evnt.EventId);
             deadLetters.Add(evnt.EventId);
             

@@ -164,6 +164,45 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         (await reactor.GetDeadLetters()).Should().BeEquivalentTo(failureEvents);
     }
 
+    [Fact]
+    public async Task Reacting_to_single_transform_event()
+    {
+        using var system = actorSystemHandler.StartNewActorSystem();
+
+        var eventId = Guid.NewGuid().ToString();
+
+        var firstTransformedTo = Guid.NewGuid().ToString();
+        var secondTransformedTo = Guid.NewGuid().ToString();
+
+        var outputWriter = new TestOutputWriter();
+
+        var reactor = CreateReactor(
+            ImmutableList.Create<Events.IEvent>(new Events.TransformInto(
+                eventId,
+                ImmutableList.Create<object>(
+                    firstTransformedTo,
+                    secondTransformedTo))),
+            system);
+
+        var coordinator = await system
+            .EventReactors(config => config
+                .WithReactor(reactor, Configure)
+                .WithOutputWriter(outputWriter))
+            .Start();
+
+        await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+
+        reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
+        reactor.GetHandledEvents()[eventId].Should().Be(1);
+        (await reactor.GetDeadLetters()).Should().BeEmpty();
+
+        var transformedEvents = outputWriter.GetItems();
+
+        transformedEvents.Should().HaveCount(2);
+        transformedEvents.Should().Contain(firstTransformedTo);
+        transformedEvents.Should().Contain(secondTransformedTo);
+    }
+
     protected virtual IHaveConfiguration<EventReactorInstanceConfig> Configure(
         IHaveConfiguration<EventReactorInstanceConfig> config)
     {

@@ -48,16 +48,18 @@ public class PositionedStreamWorker(IActorRef publisher) : ActorPublisher<IMessa
     {
         public object Message => Event.Event;
 
-        public Task Ack()
+        public Task Ack(CancellationToken cacellationToken)
         {
             return AckTo.Ask<PositionedStreamPublisher.Responses.AckNackResponse>(
-                new PositionedStreamPublisher.Commands.Ack(Event.Position));
+                new PositionedStreamPublisher.Commands.Ack(Event.Position), 
+                cancellationToken: cacellationToken);
         }
 
-        public Task Nack(Exception error)
+        public Task Nack(Exception error, CancellationToken cacellationToken)
         {
             return AckTo.Ask<PositionedStreamPublisher.Responses.AckNackResponse>(
-                new PositionedStreamPublisher.Commands.Nack(Event.Position, error));
+                new PositionedStreamPublisher.Commands.Nack(Event.Position, error), 
+                cancellationToken: cacellationToken);
         }
     }
 }
