@@ -40,7 +40,7 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
     {
         public interface IRequestResponse;
 
-        public record SuccessRequestResponse(IImmutableList<EventWithPosition> Events) : IRequestResponse;
+        public record SuccessRequestResponse(IImmutableList<EventWithPosition> EventsToHandle) : IRequestResponse;
 
         public record FailureRequestResponse(Exception Failure) : IRequestResponse;
 
@@ -104,7 +104,14 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
                     ex => new InternalCommands.Failed(ex)), Keep.Left)
                 .Run(Context.System.Materializer());
 
+            Stash.UnstashAll();
+            
             Become(() => Started(cancellation));
+        });
+
+        Command<Commands.Request>(_ =>
+        {
+            Stash.Stash();
         });
     }
 
@@ -248,12 +255,18 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
 
     private void Completed()
     {
-        Command<Commands.Request>(_ => { Sender.Tell(new Responses.CompletedRequestResponse()); });
+        Command<Commands.Request>(_ =>
+        {
+            Sender.Tell(new Responses.CompletedRequestResponse());
+        });
     }
 
     private void Failed(Exception failure)
     {
-        Command<Commands.Request>(_ => { Sender.Tell(new Responses.FailureRequestResponse(failure)); });
+        Command<Commands.Request>(_ =>
+        {
+            Sender.Tell(new Responses.FailureRequestResponse(failure));
+        });
     }
 
     private void PushEventsTo(IImmutableList<EventWithPosition> events, IActorRef receiver)

@@ -15,7 +15,7 @@ public class PositionedStreamWorker(IActorRef publisher) : ActorPublisher<IMessa
                 return true;
             
             case PositionedStreamPublisher.Responses.SuccessRequestResponse success:
-                foreach (var evnt in success.Events)
+                foreach (var evnt in success.EventsToHandle)
                     OnNext(new PositionedEventWithAck(evnt, publisher));
 
                 return true;

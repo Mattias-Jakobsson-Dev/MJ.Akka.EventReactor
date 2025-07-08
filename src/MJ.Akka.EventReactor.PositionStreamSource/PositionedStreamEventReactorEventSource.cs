@@ -1,9 +1,11 @@
 ﻿using Akka;
 using Akka.Actor;
 using Akka.Streams.Dsl;
+using JetBrains.Annotations;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
 
+[PublicAPI]
 public class PositionedStreamEventReactorEventSource(
     IStartPositionStream startPositionStream,
     ActorSystem actorSystem,
