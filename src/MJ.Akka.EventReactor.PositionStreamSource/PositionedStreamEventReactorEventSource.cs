@@ -9,7 +9,8 @@ namespace MJ.Akka.EventReactor.PositionStreamSource;
 public class PositionedStreamEventReactorEventSource(
     IStartPositionStream startPositionStream,
     ActorSystem actorSystem,
-    IEventReactor reactor) 
+    IEventReactor reactor,
+    int parallelism = 100)
     : IEventReactorEventSource
 {
     public Source<IMessageWithAck, NotUsed> Start()
@@ -21,6 +22,6 @@ public class PositionedStreamEventReactorEventSource(
     protected virtual IActorRef GetPublisherActorRef()
     {
         return actorSystem.ActorOf(
-            Props.Create(() => new PositionedStreamPublisher(reactor.Name, startPositionStream)));
+            Props.Create(() => new PositionedStreamPublisher(reactor.Name, startPositionStream, parallelism)));
     }
 }

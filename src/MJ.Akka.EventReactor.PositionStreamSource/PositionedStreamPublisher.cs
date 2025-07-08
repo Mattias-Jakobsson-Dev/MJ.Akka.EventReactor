@@ -56,6 +56,7 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
 
     private readonly string _eventReactorName;
     private readonly IStartPositionStream _startPositionStream;
+    private readonly int _parallelism;
     private readonly Dictionary<IActorRef, long> _demand = new();
     private readonly Queue<EventWithPosition> _buffer = new();
     private readonly Dictionary<long, object> _inFlightMessages = new();
@@ -63,10 +64,11 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
     private long? _currentPosition;
     private bool _shouldComplete;
 
-    public PositionedStreamPublisher(string eventReactorName, IStartPositionStream startPositionStream)
+    public PositionedStreamPublisher(string eventReactorName, IStartPositionStream startPositionStream, int parallelism)
     {
         _eventReactorName = eventReactorName;
         _startPositionStream = startPositionStream;
+        _parallelism = parallelism;
 
         Recover<Events.PositionUpdated>(On);
 
@@ -89,7 +91,7 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
 
             _startPositionStream
                 .StartFrom(_currentPosition)
-                .SelectAsyncUnordered(100, async evnt =>
+                .SelectAsyncUnordered(_parallelism, async evnt =>
                 {
                     await self.Ask<InternalResponses.PushEventResponse>(
                         new InternalCommands.PushEvent(evnt),
