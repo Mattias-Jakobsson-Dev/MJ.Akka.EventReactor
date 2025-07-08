@@ -9,7 +9,7 @@ public class DefaultReactorTests(NormalTestKitActorSystem systemHandler)
     : EventReactorCoordinatorTestsBase(systemHandler), IClassFixture<NormalTestKitActorSystem>
 {
     protected override ITestReactor CreateReactor(
-        IImmutableList<Events.IEvent> events,
+        IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem,
         string? name = null)
     {

@@ -1,3 +1,3 @@
-namespace MJ.Akka.EventReactor.RabbitMq;
+namespace MJ.Akka.EventReactor;
 
 public class SerializationException(string message) : Exception(message);

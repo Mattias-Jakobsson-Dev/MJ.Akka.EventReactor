@@ -18,7 +18,9 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var eventId = Guid.NewGuid().ToString();
 
         var reactor = CreateReactor(
-            ImmutableList.Create<Events.IEvent>(new Events.HandledEvent(eventId)),
+            ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.HandledEvent(eventId),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
             system);
 
         var coordinator = await system
@@ -41,14 +43,18 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var firstEventId = Guid.NewGuid().ToString();
 
         var firstReactor = CreateReactor(
-            ImmutableList.Create<Events.IEvent>(new Events.HandledEvent(firstEventId)),
+            ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.HandledEvent(firstEventId),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
             system,
             "first-reactor");
         
         var secondEventId = Guid.NewGuid().ToString();
 
         var secondReactor = CreateReactor(
-            ImmutableList.Create<Events.IEvent>(new Events.HandledEvent(secondEventId)),
+            ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.HandledEvent(secondEventId),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
             system,
             "second-reactor");
 
@@ -77,8 +83,9 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         var eventId = Guid.NewGuid().ToString();
 
-        var reactor = new TestReactor(ImmutableList.Create<Events.IEvent>(
-            new Events.EventThatFails(eventId, new Exception("Failed"))));
+        var reactor = new TestReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+            (new Events.EventThatFails(eventId, new Exception("Failed")),
+                new Dictionary<string, object?>().ToImmutableDictionary())));
 
         var coordinator = await system
             .EventReactors(config => config
@@ -99,7 +106,9 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var eventId = Guid.NewGuid().ToString();
 
         var reactor = CreateReactor(
-            ImmutableList.Create<Events.IEvent>(new Events.HandledEvent(eventId)),
+            ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.HandledEvent(eventId),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
             system);
 
         var firstCoordinator = await system
@@ -132,9 +141,10 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         using var system = actorSystemHandler.StartNewActorSystem();
 
         var events = Enumerable.Range(0, numberOfEvents)
-            .Select(_ => random.Next(0, 100) < failurePercentage
+            .Select(_ => (evnt: random.Next(0, 100) < failurePercentage
                 ? (Events.IEvent)new Events.EventThatFails(Guid.NewGuid().ToString(), new Exception("Failed"))
-                : new Events.HandledEvent(Guid.NewGuid().ToString()))
+                : new Events.HandledEvent(Guid.NewGuid().ToString()),
+                metadata: (IImmutableDictionary<string, object?>)new Dictionary<string, object?>().ToImmutableDictionary()))
             .ToImmutableList();
 
         var reactor = CreateReactor(events, system);
@@ -147,13 +157,13 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         var successfulEvents = events
-            .Where(x => x is Events.HandledEvent)
-            .Select(x => x.EventId)
+            .Where(x => x.evnt is Events.HandledEvent)
+            .Select(x => x.evnt.EventId)
             .ToImmutableList();
         
         var failureEvents = events
-            .Where(x => x is Events.EventThatFails)
-            .Select(x => x.EventId)
+            .Where(x => x.evnt is Events.EventThatFails)
+            .Select(x => x.evnt.EventId)
             .ToImmutableList();
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(successfulEvents);
@@ -177,11 +187,13 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var outputWriter = new TestOutputWriter();
 
         var reactor = CreateReactor(
-            ImmutableList.Create<Events.IEvent>(new Events.TransformInto(
+            ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.TransformInto(
                 eventId,
                 ImmutableList.Create<object>(
                     firstTransformedTo,
-                    secondTransformedTo))),
+                    secondTransformedTo)),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
             system);
 
         var coordinator = await system
@@ -210,7 +222,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
     }
 
     protected abstract ITestReactor CreateReactor(
-        IImmutableList<Events.IEvent> events,
+        IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem,
         string? name = null);
 }

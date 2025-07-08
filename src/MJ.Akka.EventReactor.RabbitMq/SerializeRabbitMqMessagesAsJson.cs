@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Akka.IO;
 using Akka.Streams.Amqp.RabbitMq;
 using JetBrains.Annotations;
@@ -24,13 +25,14 @@ public class SerializeRabbitMqMessagesAsJson(Func<object, string?>? findRoutingK
             routingKey: findRoutingKey?.Invoke(message)));
     }
 
-    public Task<object> DeSerialize(IncomingMessage message)
+    public Task<(object data, IImmutableDictionary<string, object?> metadata)> DeSerialize(IncomingMessage message)
     {
         var result = JsonConvert.DeserializeObject(message.Bytes.ToString(), _settings);
         
         if (result == null)
             throw new SerializationException("Failed to deserialize RabbitMQ message");
 
-        return Task.FromResult(result);
+        return Task.FromResult<(object data, IImmutableDictionary<string, object?> metadata)>(
+            (result, ImmutableDictionary<string, object?>.Empty));
     }
 }

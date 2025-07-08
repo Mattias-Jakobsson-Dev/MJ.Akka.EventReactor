@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Streams.Actors;
 
@@ -47,6 +48,7 @@ public class PositionedStreamWorker(IActorRef publisher) : ActorPublisher<IMessa
     private record PositionedEventWithAck(EventWithPosition Event, IActorRef AckTo) : IMessageWithAck
     {
         public object Message => Event.Event;
+        public IImmutableDictionary<string, object?> Metadata => Event.Metadata;
 
         public Task Ack(CancellationToken cacellationToken)
         {

@@ -6,7 +6,9 @@ using MJ.Akka.EventReactor.Setup;
 
 namespace MJ.Akka.EventReactor.Tests.TestData;
 
-public class TestReactor(IImmutableList<Events.IEvent> events, string? name = null) : ITestReactor
+public class TestReactor(
+    IImmutableList<(Events.IEvent evnt, IImmutableDictionary<string, object?> metadata)> events, 
+    string? name = null) : ITestReactor
 {
     private readonly ConcurrentDictionary<string, int> _handledEvents = [];
     private readonly EventSource _eventSource = new(events);
@@ -49,15 +51,17 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
         return _handledEvents.ToImmutableDictionary();
     }
 
-    private class EventSource(IImmutableList<Events.IEvent> events) : IEventReactorEventSource
+    private class EventSource(
+        IImmutableList<(Events.IEvent evnt, IImmutableDictionary<string, object?> metadata)> events) : IEventReactorEventSource
     {
         private readonly ConcurrentBag<string> _deadLetters = [];
         private readonly ConcurrentBag<string> _eventsToSkip = [];
         
         public Source<IMessageWithAck, NotUsed> Start()
         {
-            return Source.From(events.Where(x => !_eventsToSkip.Contains(x.EventId)))
-                .Select(IMessageWithAck (x) => new EventWithAck(x, _eventsToSkip, _deadLetters));
+            return Source.From(events.Where(x => !_eventsToSkip.Contains(x.evnt.EventId)))
+                .Select(IMessageWithAck (x) => 
+                    new EventWithAck(x.evnt, x.metadata, _eventsToSkip, _deadLetters));
         }
         
         public IImmutableList<string> GetDeadLetters()
@@ -68,10 +72,12 @@ public class TestReactor(IImmutableList<Events.IEvent> events, string? name = nu
     
     private class EventWithAck(
         Events.IEvent evnt,
+        IImmutableDictionary<string, object?> metadata,
         ConcurrentBag<string> eventsToSkip,
         ConcurrentBag<string> deadLetters) : IMessageWithAck
     {
         public object Message { get; } = evnt;
+        public IImmutableDictionary<string, object?> Metadata { get; } = metadata;
 
         public Task Ack(CancellationToken cancellationToken)
         {

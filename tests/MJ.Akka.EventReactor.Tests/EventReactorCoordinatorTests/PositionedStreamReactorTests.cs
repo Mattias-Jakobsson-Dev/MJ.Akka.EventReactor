@@ -15,7 +15,7 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
     : EventReactorCoordinatorTestsBase(systemHandler), IClassFixture<NormalTestKitActorSystem>
 {
     protected override ITestReactor CreateReactor(
-        IImmutableList<Events.IEvent> events,
+        IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem,
         string? name = null)
     {
@@ -23,7 +23,7 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
     }
     
     private class PositionedStreamReactor(
-        IImmutableList<Events.IEvent> events,
+        IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem, 
         string? name = null) 
         : ITestReactor
@@ -60,12 +60,13 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
             return _handledEvents.ToImmutableDictionary();
         }
         
-        private class PositionStreamStarter(IImmutableList<Events.IEvent> events) : IStartPositionStream
+        private class PositionStreamStarter(
+            IImmutableList<(Events.IEvent evnt, IImmutableDictionary<string, object?> metadata)> events) : IStartPositionStream
         {
             public Source<EventWithPosition, NotUsed> StartFrom(long? position)
             {
                 return Source
-                    .From(events.Select((evnt, index) => new EventWithPosition(evnt, index + 1)))
+                    .From(events.Select((evnt, index) => new EventWithPosition(evnt.evnt, evnt.metadata, index + 1)))
                     .Where(x => position == null || x.Position > position);
             }
 

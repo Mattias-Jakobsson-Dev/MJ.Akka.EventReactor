@@ -1,3 +1,4 @@
+using System.Collections.Immutable;
 using Akka;
 using Akka.Streams.Amqp.RabbitMq;
 using Akka.Streams.Amqp.RabbitMq.Dsl;
@@ -20,18 +21,20 @@ public class RabbitMqEventReactorSource(
                 deSerializationParallelism,
                 async x =>
                 {
-                    var message = await serializer.DeSerialize(x.Message);
+                    var (message, metadata) = await serializer.DeSerialize(x.Message);
 
-                    if (message == null)
-                        return null;
-                    
-                    return (IMessageWithAck)new MessageWithAck(message, () => x.Ack(), () => x.Nack());
+                    return (IMessageWithAck)new MessageWithAck(message, metadata, () => x.Ack(), () => x.Nack());
                 });
     }
 
-    private class MessageWithAck(object message, Func<Task> ack, Func<Task> nack) : IMessageWithAck
+    private class MessageWithAck(
+        object message,
+        IImmutableDictionary<string, object?> metadata,
+        Func<Task> ack, 
+        Func<Task> nack) : IMessageWithAck
     {
         public object Message { get; } = message;
+        public IImmutableDictionary<string, object?> Metadata { get; } = metadata;
 
         public Task Ack(CancellationToken cancellationToken)
         {
