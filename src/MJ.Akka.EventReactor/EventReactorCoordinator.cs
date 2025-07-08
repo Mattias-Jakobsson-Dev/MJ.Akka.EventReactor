@@ -43,15 +43,12 @@ public class EventReactorCoordinator : ReceiveActor
 
     private readonly HashSet<IActorRef> _waitingForCompletion = [];
 
-    public EventReactorCoordinator(string reactorName)
+    // ReSharper disable once MemberCanBePrivate.Global
+    public EventReactorCoordinator(ISupplyReactorConfiguration configSupplier)
     {
         _logger = Context.GetLogger();
 
-        _configuration = Context
-                             .System
-                             .GetExtension<ReactorConfigurationsSupplier>()?
-                             .GetConfigurationFor(reactorName) ??
-                         throw new NoEventReactorException(reactorName);
+        _configuration = configSupplier.GetConfiguration();
 
         Become(Stopped);
     }
@@ -188,9 +185,9 @@ public class EventReactorCoordinator : ReceiveActor
         base.PostStop();
     }
 
-    public static Props Init(string reactorName)
+    public static Props Init(ISupplyReactorConfiguration configSupplier)
     {
-        return Props.Create(() => new EventReactorCoordinator(reactorName));
+        return Props.Create(() => new EventReactorCoordinator(configSupplier));
     }
 
     private static Source<NotUsed, NotUsed> MaybeCreateRestartSource(

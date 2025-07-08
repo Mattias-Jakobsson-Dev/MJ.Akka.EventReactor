@@ -18,10 +18,7 @@ public static class ActorSystemExtensions
         {
             result[reactorSetup.Key] = (reactorSetup.Value.eventReactor, reactorSetup.Value.setup(systemConfig));
         }
-
-        ReactorConfigurationsSupplier.Register(actorSystem,
-            result.ToImmutableDictionary(x => x.Key, x => x.Value.config));
-
+        
         return new EventReactorApplication(actorSystem, result.ToImmutableDictionary());
     }
 
@@ -56,7 +53,7 @@ public static class ActorSystemExtensions
             foreach (var reactor in reactors)
             {
                 var coordinator = actorSystem
-                    .ActorOf(EventReactorCoordinator.Init(reactor.Key));
+                    .ActorOf(EventReactorCoordinator.Init(new SupplyReactorConfigurationInProcess(reactor.Value.config)));
 
                 await coordinator.Ask<EventReactorCoordinator.Responses.StartResponse>(
                     new EventReactorCoordinator.Commands.Start());
