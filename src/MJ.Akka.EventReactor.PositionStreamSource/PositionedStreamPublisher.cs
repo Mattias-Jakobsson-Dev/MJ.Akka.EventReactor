@@ -206,6 +206,9 @@ public class PositionedStreamPublisher : ReceivePersistentActor, IWithTimers
                     : cmd.Position;
 
                 Persist(new Events.PositionUpdated(position), On);
+                
+                if (LastSequenceNr % 10 == 0 && LastSequenceNr > 0)
+                    DeleteMessages(LastSequenceNr - 5);
             }
 
             if (_inFlightMessages.Count == 0 && _shouldComplete)
