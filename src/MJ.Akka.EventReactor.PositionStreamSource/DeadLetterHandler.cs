@@ -17,7 +17,7 @@ public class DeadLetterHandler : ReceivePersistentActor
     
     public static class Events
     {
-        public record DeadLetterAdded(object Event, Exception Error);
+        public record DeadLetterAdded(object Event, string ErrorMessage);
     }
     
     private readonly string _eventReactorName;
@@ -31,7 +31,7 @@ public class DeadLetterHandler : ReceivePersistentActor
         Command<Commands.AddDeadLetter>(cmd =>
         {
             //TODO: Handle retries
-            Persist(new Events.DeadLetterAdded(cmd.Event, cmd.Error), evnt =>
+            Persist(new Events.DeadLetterAdded(cmd.Event, cmd.Error.Message), evnt =>
             {
                 On(evnt);
                 
