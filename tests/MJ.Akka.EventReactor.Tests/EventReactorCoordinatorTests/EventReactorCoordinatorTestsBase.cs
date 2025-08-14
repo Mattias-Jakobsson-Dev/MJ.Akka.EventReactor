@@ -10,6 +10,8 @@ namespace MJ.Akka.EventReactor.Tests.EventReactorCoordinatorTests;
 
 public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSystemHandler)
 {
+    protected abstract bool HasDeadLetterSupport { get; }
+    
     [Fact]
     public async Task Reacting_to_event_that_is_successful()
     {
@@ -27,12 +29,16 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
             .EventReactors(config => config
                 .WithReactor(reactor, Configure))
             .Start();
+        
+        var reactorProxy = coordinator.Get(reactor.Name)!;
 
-        await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-        (await reactor.GetDeadLetters()).Should().BeEmpty();
+
+        if (HasDeadLetterSupport)
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
     }
 
     [Fact]
@@ -63,17 +69,24 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
                 .WithReactor(firstReactor, Configure)
                 .WithReactor(secondReactor, Configure))
             .Start();
+        
+        var firstReactorProxy = coordinator.Get(firstReactor.Name)!;
+        var secondReactorProxy = coordinator.Get(secondReactor.Name)!;
 
-        await coordinator.Get(firstReactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
-        await coordinator.Get(secondReactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await firstReactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await secondReactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         firstReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(firstEventId));
         firstReactor.GetHandledEvents()[firstEventId].Should().Be(1);
-        (await firstReactor.GetDeadLetters()).Should().BeEmpty();
-        
+
+        if (HasDeadLetterSupport)
+            (await firstReactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+
         secondReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(secondEventId));
         secondReactor.GetHandledEvents()[secondEventId].Should().Be(1);
-        (await secondReactor.GetDeadLetters()).Should().BeEmpty();
+        
+        if (HasDeadLetterSupport)
+            (await secondReactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
     }
 
     [Fact]
@@ -82,20 +95,79 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         using var system = actorSystemHandler.StartNewActorSystem();
 
         var eventId = Guid.NewGuid().ToString();
-
-        var reactor = new TestReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
-            (new Events.EventThatFails(eventId, new Exception("Failed")),
-                new Dictionary<string, object?>().ToImmutableDictionary())));
-
+        
+        var reactor = CreateReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.EventThatFails(eventId, new Exception("Failed")),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
+            system);
+        
         var coordinator = await system
             .EventReactors(config => config
                 .WithReactor(reactor, Configure))
             .Start();
 
-        await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        var reactorProxy = coordinator.Get(reactor.Name)!;
+        
+        await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Should().HaveCount(0);
-        (await reactor.GetDeadLetters()).Should().BeEquivalentTo(ImmutableList.Create(eventId));
+
+        if (HasDeadLetterSupport)
+        {
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters())
+                .Select(x => x.Message as Events.IEvent)
+                .Where(x => x != null)
+                .Select(x => x!.EventId)
+                .Should()
+                .BeEquivalentTo(ImmutableList.Create(eventId));
+        }
+    }
+
+    [Fact]
+    public async Task Reacting_to_event_that_fails_once_and_retrying_if_available()
+    {
+        using var system = actorSystemHandler.StartNewActorSystem();
+
+        var eventId = Guid.NewGuid().ToString();
+        
+        var reactor = CreateReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.EventThatFailsOnce(eventId, new Exception("Failed")),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
+            system);
+        
+        var coordinator = await system
+            .EventReactors(config => config
+                .WithReactor(reactor, Configure))
+            .Start();
+
+        var reactorProxy = coordinator.Get(reactor.Name)!;
+        
+        await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
+
+        reactor.GetHandledEvents().Should().HaveCount(0);
+
+        if (HasDeadLetterSupport)
+        {
+            var deadLettersHandler = reactorProxy.GetDeadLetters();
+            
+            var deadLetters = await deadLettersHandler.LoadDeadLetters();
+
+            deadLetters.Should().HaveCount(1);
+            
+            deadLetters.Select(x => x.Message as Events.IEvent)
+                .Where(x => x != null)
+                .Select(x => x!.EventId)
+                .Should()
+                .BeEquivalentTo(ImmutableList.Create(eventId));
+
+            await deadLettersHandler.Retry(long.MaxValue);
+            
+            await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
+
+            reactor.GetHandledEvents().Should().HaveCount(1);
+
+            (await deadLettersHandler.LoadDeadLetters()).Should().HaveCount(0);
+        }
     }
 
     [Fact]
@@ -115,19 +187,28 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
             .EventReactors(config => config
                 .WithReactor(reactor, Configure))
             .Start();
+        
+        var firstCoordinatorProxy = firstCoordinator.Get(reactor.Name)!;
 
-        await firstCoordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await firstCoordinatorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         var secondCoordinator = await system
             .EventReactors(config => config
                 .WithReactor(reactor, Configure))
             .Start();
+        
+        var secondCoordinatorProxy = secondCoordinator.Get(reactor.Name)!;
 
-        await secondCoordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await secondCoordinatorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-        (await reactor.GetDeadLetters()).Should().BeEmpty();
+
+        if (HasDeadLetterSupport)
+        {
+            (await firstCoordinatorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await secondCoordinatorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+        }
     }
 
     [Theory]
@@ -153,8 +234,10 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
             .EventReactors(config => config
                 .WithReactor(reactor, Configure))
             .Start();
+        
+        var reactorProxy = coordinator.Get(reactor.Name)!;
 
-        await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         var successfulEvents = events
             .Where(x => x.evnt is Events.HandledEvent)
@@ -171,7 +254,16 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         foreach (var successfulEvent in successfulEvents)
             reactor.GetHandledEvents()[successfulEvent].Should().Be(1);
 
-        (await reactor.GetDeadLetters()).Should().BeEquivalentTo(failureEvents);
+        if (HasDeadLetterSupport)
+        {
+            var deadLetters = await reactorProxy.GetDeadLetters().LoadDeadLetters();
+            
+            deadLetters.Select(x => x.Message as Events.IEvent)
+                .Where(x => x != null)
+                .Select(x => x!.EventId)
+                .Should()
+                .BeEquivalentTo(failureEvents);
+        }
     }
 
     [Fact]
@@ -201,12 +293,16 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
                 .WithReactor(reactor, Configure)
                 .WithOutputWriter(outputWriter))
             .Start();
+        
+        var reactorProxy = coordinator.Get(reactor.Name)!;
 
-        await coordinator.Get(reactor.Name)!.WaitForCompletion(TimeSpan.FromSeconds(5));
+        await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-        (await reactor.GetDeadLetters()).Should().BeEmpty();
+
+        if (HasDeadLetterSupport)
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
 
         var transformedEvents = outputWriter.GetItems();
 

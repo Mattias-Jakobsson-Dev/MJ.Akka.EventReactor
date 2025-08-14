@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Akka.Actor;
 using MJ.Akka.EventReactor.Configuration;
+using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.Setup;
 
@@ -58,7 +59,7 @@ public static class ActorSystemExtensions
                 await coordinator.Ask<EventReactorCoordinator.Responses.StartResponse>(
                     new EventReactorCoordinator.Commands.Start());
 
-                results[reactor.Key] = new ReactorProxy(reactor.Value.eventReactor, coordinator);
+                results[reactor.Key] = new ReactorProxy(coordinator);
             }
 
             return new Coordinator(results.ToImmutableDictionary());
@@ -73,10 +74,8 @@ public static class ActorSystemExtensions
             }
         }
         
-        private class ReactorProxy(IEventReactor eventReactor, IActorRef coordinator) : IEventReactorProxy
+        private class ReactorProxy(IActorRef coordinator) : IEventReactorProxy
         {
-            public IEventReactor EventReactor { get; } = eventReactor;
-            
             public Task Stop()
             {
                 return coordinator.Ask<EventReactorCoordinator.Responses.StopResponse>(
@@ -91,6 +90,43 @@ public static class ActorSystemExtensions
 
                 if (response.Error != null)
                     throw response.Error;
+            }
+
+            public IDeadLetterManager GetDeadLetters()
+            {
+                return new CoordinatorDeadLetterManager(coordinator);
+            }
+            
+            private class CoordinatorDeadLetterManager(IActorRef coordinator) : IDeadLetterManager
+            {
+                public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters()
+                {
+                    var response = await coordinator.Ask<EventReactorCoordinator.Responses.GetDeadLettersResponse>(
+                        new EventReactorCoordinator.Commands.GetDeadLetters());
+
+                    if (response.Error != null)
+                        throw response.Error;
+
+                    return response.DeadLetters;
+                }
+
+                public async Task Retry(long to)
+                {
+                    var response = await coordinator.Ask<EventReactorCoordinator.Responses.RetryDeadLetterResponse>(
+                        new EventReactorCoordinator.Commands.RetryDeadLetters(to));
+                    
+                    if (response.Error != null)
+                        throw response.Error;
+                }
+
+                public async Task Clear(long to)
+                {
+                    var response = await coordinator.Ask<EventReactorCoordinator.Responses.ClearDeadLetterResponse>(
+                        new EventReactorCoordinator.Commands.ClearDeadLetters(to));
+                    
+                    if (response.Error != null)
+                        throw response.Error;
+                }
             }
         }
     }
