@@ -85,6 +85,8 @@ public partial class PositionedStreamPublisher
         {
             Timers.Cancel($"timeout-{cmd.Position}");
 
+            var hasQueuedPositionUpdate = false;
+
             if (_positionsFromDeadLetters.Contains(cmd.Position))
             {
                 GetDeadLetter().Tell(new DeadLetterHandler.Commands.AckRetry(cmd.Position));
@@ -95,24 +97,36 @@ public partial class PositionedStreamPublisher
             {
                 _inFlightMessages.Remove(cmd.Position);
 
-                //TODO: Handle batching
-                if (!_inFlightMessages.Any(x => x.Key < cmd.Position))
-                {
-                    var position = _inFlightMessages.Count != 0
-                        ? _inFlightMessages.Keys.Min() - 1
-                        : cmd.Position;
+                _positionUpdatedQueue?.OfferAsync(new InternalCommands.WritePosition(ImmutableList.Create(cmd.Position)));
 
-                    Persist(new Events.PositionUpdated(position), On);
-
-                    if (LastSequenceNr % 10 == 0 && LastSequenceNr > 0)
-                        DeleteMessages(LastSequenceNr - 5);
-                }
+                hasQueuedPositionUpdate = true;
             }
 
-            if (_inFlightMessages.Count == 0 && _positionsFromDeadLetters.Count == 0 && _shouldComplete)
+            if (_inFlightMessages.Count == 0 && _positionsFromDeadLetters.Count == 0 && _shouldComplete && !hasQueuedPositionUpdate)
                 CompleteGraph(cancellation);
 
             DeferAsync("done", _ => Sender.Tell(new Responses.AckNackResponse()));
+        });
+
+        Command<InternalCommands.WritePosition>(cmd =>
+        {
+            var position = cmd.Positions
+                .Where(x => !_inFlightMessages.Any(y => y.Key < x))
+                .Max();
+
+            if (position > 0)
+            {
+                Persist(new Events.PositionUpdated(position), On);
+
+                if (LastSequenceNr % 10 == 0 && LastSequenceNr > 0)
+                    DeleteMessages(LastSequenceNr - 5);
+            }
+            
+            DeferAsync("done", _ =>
+            {
+                if (_inFlightMessages.Count == 0 && _positionsFromDeadLetters.Count == 0 && _shouldComplete)
+                    CompleteGraph(cancellation);
+            });
         });
 
         Command<Commands.Nack>(cmd =>

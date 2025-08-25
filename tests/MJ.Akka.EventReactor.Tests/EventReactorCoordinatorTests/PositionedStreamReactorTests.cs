@@ -43,7 +43,8 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
             return Task.FromResult<IEventReactorEventSource>(new PositionedStreamEventReactorEventSource(
                 new PositionStreamStarter(events),
                 actorSystem,
-                this));
+                this,
+                positionWriteInterval: TimeSpan.FromMilliseconds(10)));
         }
 
         public IImmutableDictionary<string, int> GetHandledEvents()

@@ -1,6 +1,9 @@
 using System.Collections.Immutable;
+using Akka;
 using Akka.Actor;
 using Akka.Persistence;
+using Akka.Streams;
+using Akka.Streams.Dsl;
 using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
@@ -35,6 +38,8 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
         public record Failed(Exception Failure);
 
         public record PushEvent(EventWithPosition Event);
+
+        public record WritePosition(IImmutableList<long> Positions);
     }
 
     public static class Queries
@@ -73,20 +78,24 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
 
     private readonly string _eventReactorName;
     private readonly IStartPositionStream _startPositionStream;
-    private readonly int _parallelism;
+    private readonly PositionedStreamSettings _settings;
     private readonly Dictionary<IActorRef, long> _demand = new();
     private readonly Queue<EventWithPosition> _buffer = new();
     private readonly Dictionary<long, (object message, Dictionary<string, object?> metadata)> _inFlightMessages = new();
     private readonly HashSet<long> _positionsFromDeadLetters = [];
+    private ISourceQueueWithComplete<InternalCommands.WritePosition>? _positionUpdatedQueue;
 
     private long? _currentPosition;
     private bool _shouldComplete;
 
-    public PositionedStreamPublisher(string eventReactorName, IStartPositionStream startPositionStream, int parallelism)
+    public PositionedStreamPublisher(
+        string eventReactorName,
+        IStartPositionStream startPositionStream,
+        PositionedStreamSettings settings)
     {
         _eventReactorName = eventReactorName;
         _startPositionStream = startPositionStream;
-        _parallelism = parallelism;
+        _settings = settings;
 
         Recover<Events.PositionUpdated>(On);
 
@@ -96,6 +105,25 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
     public override string PersistenceId => $"event-reactor-position-stream-publisher-{_eventReactorName}";
     
     public ITimerScheduler Timers { get; set; } = null!;
+
+    protected override void PreStart()
+    {
+        var self = Self;
+        
+        _positionUpdatedQueue = Source
+            .Queue<InternalCommands.WritePosition>(1_000, OverflowStrategy.DropHead)
+            .GroupedWithin(_settings.PositionBatchSize, _settings.PositionWriteInterval)
+            .Select(x =>
+                new InternalCommands.WritePosition(x.SelectMany(y => y.Positions).Distinct().ToImmutableList()))
+            .Select(x =>
+            {
+                self.Tell(x);
+
+                return NotUsed.Instance;
+            })
+            .ToMaterialized(Sink.Ignore<NotUsed>(), Keep.Left)
+            .Run(Context.System.Materializer());
+    }
 
     private void PushEventsTo(IImmutableList<EventWithPosition> events, IActorRef receiver)
     {

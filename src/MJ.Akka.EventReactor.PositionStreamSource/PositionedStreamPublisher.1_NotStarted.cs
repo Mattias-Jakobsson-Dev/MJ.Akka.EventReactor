@@ -21,7 +21,7 @@ public partial class PositionedStreamPublisher
 
             _startPositionStream
                 .StartFrom(_currentPosition)
-                .SelectAsyncUnordered(_parallelism, async evnt =>
+                .SelectAsyncUnordered(_settings.Parallelism, async evnt =>
                 {
                     await self.Ask<InternalResponses.PushEventResponse>(
                         new InternalCommands.PushEvent(evnt),
