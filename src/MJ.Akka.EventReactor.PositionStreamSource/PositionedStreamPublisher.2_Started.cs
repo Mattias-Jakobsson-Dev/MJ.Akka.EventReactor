@@ -11,7 +11,7 @@ public partial class PositionedStreamPublisher
     {
         Command<InternalCommands.PushEvent>(cmd =>
         {
-            if (_currentPosition != null && cmd.Event.Position <= _currentPosition)
+            if (_currentPosition != null && cmd.Event.Position < _currentPosition)
             {
                 Sender.Tell(new InternalResponses.PushEventResponse());
 
