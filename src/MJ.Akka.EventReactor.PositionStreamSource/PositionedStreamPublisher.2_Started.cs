@@ -11,6 +11,13 @@ public partial class PositionedStreamPublisher
     {
         Command<InternalCommands.PushEvent>(cmd =>
         {
+            if (_currentPosition != null && cmd.Event.Position <= _currentPosition)
+            {
+                Sender.Tell(new InternalResponses.PushEventResponse());
+
+                return;
+            }
+            
             _inFlightMessages[cmd.Event.Position] = (cmd.Event.Event, cmd.Event.Metadata.ToDictionary());
 
             var sendTo = _demand
@@ -115,7 +122,7 @@ public partial class PositionedStreamPublisher
                 .Where(x => !_inFlightMessages.Any(y => y.Key < x))
                 .Max();
 
-            if (position > _currentPosition)
+            if (_currentPosition == null || position > _currentPosition)
             {
                 Persist(new Events.PositionUpdated(position), On);
 
