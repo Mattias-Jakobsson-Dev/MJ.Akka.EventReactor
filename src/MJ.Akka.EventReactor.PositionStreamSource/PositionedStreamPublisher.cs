@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Akka;
 using Akka.Actor;
+using Akka.Event;
 using Akka.Persistence;
 using Akka.Streams;
 using Akka.Streams.Dsl;
@@ -147,6 +148,8 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
 
         cancellation.Cancel();
 
+        Log.Info("Positioned stream source completed for {0}", _eventReactorName);
+        
         Become(Completed);
     }
 

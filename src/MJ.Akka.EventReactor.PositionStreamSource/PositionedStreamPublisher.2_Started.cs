@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Akka.Actor;
+using Akka.Event;
 using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
@@ -235,6 +236,8 @@ public partial class PositionedStreamPublisher
         Command<InternalCommands.Failed>(cmd =>
         {
             cancellation.Cancel();
+            
+            Log.Error(cmd.Failure, "Positioned stream source failed for {0}", _eventReactorName);
 
             Become(() => Failed(cmd.Failure));
         });
