@@ -134,7 +134,7 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
             Timers.StartSingleTimer(
                 $"timeout-{evnt.Position}",
                 new Commands.Nack(evnt.Position, new Exception("Message timed out")),
-                TimeSpan.FromSeconds(10));
+                _settings.MessageTimeout);
         }
     }
 
