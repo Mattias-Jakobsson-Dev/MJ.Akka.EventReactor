@@ -115,7 +115,7 @@ public partial class PositionedStreamPublisher
                 .Where(x => !_inFlightMessages.Any(y => y.Key < x))
                 .Max();
 
-            if (position > 0)
+            if (position > _currentPosition)
             {
                 Persist(new Events.PositionUpdated(position), On);
 
