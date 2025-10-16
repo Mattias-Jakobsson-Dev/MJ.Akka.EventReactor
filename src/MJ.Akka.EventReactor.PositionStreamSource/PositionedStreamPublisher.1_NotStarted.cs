@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Akka;
 using Akka.Actor;
+using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using MJ.Akka.EventReactor.DeadLetter;
@@ -18,6 +19,8 @@ public partial class PositionedStreamPublisher
             _currentPosition ??= await _startPositionStream.GetInitialPosition();
 
             var self = Self;
+            
+            Log.Info("Starting positioned stream event reactor {0} from position {1}", _eventReactorName, _currentPosition);
 
             _startPositionStream
                 .StartFrom(_currentPosition)
