@@ -118,18 +118,23 @@ public partial class PositionedStreamPublisher
 
         Command<InternalCommands.WritePosition>(cmd =>
         {
-            var position = cmd.Positions
+            var positions = cmd.Positions
                 .Where(x => !_inFlightMessages.Any(y => y.Key < x))
-                .Max();
+                .ToImmutableList();
 
-            if (_currentPosition == null || position > _currentPosition)
+            if (!positions.IsEmpty)
             {
-                Persist(new Events.PositionUpdated(position), On);
+                var position = positions.Max();
 
-                if (LastSequenceNr % 10 == 0 && LastSequenceNr > 0)
-                    DeleteMessages(LastSequenceNr - 5);
+                if (_currentPosition == null || position > _currentPosition)
+                {
+                    Persist(new Events.PositionUpdated(position), On);
+
+                    if (LastSequenceNr % 10 == 0 && LastSequenceNr > 0)
+                        DeleteMessages(LastSequenceNr - 5);
+                }
             }
-            
+
             DeferAsync("done", _ =>
             {
                 if (_inFlightMessages.Count == 0 && _positionsFromDeadLetters.Count == 0 && _shouldComplete)
