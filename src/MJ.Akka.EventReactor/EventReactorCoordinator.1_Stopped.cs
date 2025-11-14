@@ -36,7 +36,7 @@ public partial class EventReactorCoordinator
                             try
                             {
                                 var result = await _configuration
-                                    .Handle(msg.Message, cancellation.Token);
+                                    .Handle(msg, cancellation.Token);
 
                                 await msg.Ack(cancellation.Token);
 

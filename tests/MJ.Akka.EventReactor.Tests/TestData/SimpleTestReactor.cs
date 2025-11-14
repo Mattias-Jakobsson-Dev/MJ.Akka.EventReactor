@@ -2,31 +2,31 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Akka;
 using Akka.Streams.Dsl;
-using MJ.Akka.EventReactor.Setup;
+using MJ.Akka.EventReactor.Simple;
 
 namespace MJ.Akka.EventReactor.Tests.TestData;
 
-public class TestReactor(
+public class SimpleTestReactor(
     IImmutableList<(Events.IEvent evnt, IImmutableDictionary<string, object?> metadata)> events, 
-    string? name = null) : ITestReactor
+    string? name = null) : SimpleEventReactor, ITestReactor
 {
     private readonly ConcurrentDictionary<string, int> _handledEvents = [];
     private readonly EventSource _eventSource = new(events);
 
-    public string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
+    public override string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
 
-    public ISetupEventReactor Configure(ISetupEventReactor config)
+    protected override ISetupSimpleEventReactor Configure(ISetupSimpleEventReactor config)
     {
         return ConfigureHandlers(config, _handledEvents);
     }
 
-    public Task<IEventReactorEventSource> GetSource()
+    public override Task<IEventReactorEventSource> GetSource()
     {
         return Task.FromResult<IEventReactorEventSource>(_eventSource);
     }
     
-    public static ISetupEventReactor ConfigureHandlers(
-        ISetupEventReactor config,
+    public static ISetupSimpleEventReactor ConfigureHandlers(
+        ISetupSimpleEventReactor config,
         ConcurrentDictionary<string, int> handledEvents)
     {
         var onceFailedEvents = new ConcurrentBag<string>();

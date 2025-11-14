@@ -4,7 +4,7 @@ using Akka;
 using Akka.Actor;
 using Akka.Streams.Dsl;
 using MJ.Akka.EventReactor.PositionStreamSource;
-using MJ.Akka.EventReactor.Setup;
+using MJ.Akka.EventReactor.Simple;
 using MJ.Akka.EventReactor.Tests.TestData;
 using Xunit;
 
@@ -27,18 +27,18 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
         IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem, 
         string? name = null) 
-        : ITestReactor
+        : SimpleEventReactor, ITestReactor
     {
         private readonly ConcurrentDictionary<string, int> _handledEvents = [];
         
-        public string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
+        public override string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
         
-        public ISetupEventReactor Configure(ISetupEventReactor config)
+        protected override ISetupSimpleEventReactor Configure(ISetupSimpleEventReactor config)
         {
-            return TestReactor.ConfigureHandlers(config, _handledEvents);
+            return SimpleTestReactor.ConfigureHandlers(config, _handledEvents);
         }
 
-        public Task<IEventReactorEventSource> GetSource()
+        public override Task<IEventReactorEventSource> GetSource()
         {
             return Task.FromResult<IEventReactorEventSource>(new PositionedStreamEventReactorEventSource(
                 new PositionStreamStarter(events),

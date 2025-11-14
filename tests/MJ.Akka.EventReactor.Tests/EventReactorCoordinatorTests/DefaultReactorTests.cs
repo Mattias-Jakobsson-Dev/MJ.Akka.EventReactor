@@ -15,6 +15,6 @@ public class DefaultReactorTests(NormalTestKitActorSystem systemHandler)
         ActorSystem actorSystem,
         string? name = null)
     {
-        return new TestReactor(events, name);
+        return new SimpleTestReactor(events, name);
     }
 }

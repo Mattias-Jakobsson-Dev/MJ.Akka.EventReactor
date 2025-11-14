@@ -13,7 +13,7 @@ public static class ActorSystemExtensions
     {
         var systemConfig = setup(EventReactorSystemSetup.From(actorSystem)).Config;
 
-        var result = new Dictionary<string, (IEventReactor eventReactor, EventReactorConfiguration config)>();
+        var result = new Dictionary<string, (IConfigureEventReactor eventReactor, EventReactorConfiguration config)>();
 
         foreach (var reactorSetup in systemConfig.EventReactors)
         {
@@ -44,7 +44,7 @@ public static class ActorSystemExtensions
 
     private class EventReactorApplication(
         ActorSystem actorSystem,
-        IImmutableDictionary<string, (IEventReactor eventReactor, EventReactorConfiguration config)> reactors)
+        IImmutableDictionary<string, (IConfigureEventReactor eventReactor, EventReactorConfiguration config)> reactors)
         : IEventReactorApplication
     {
         public async Task<IEventReactorCoordinator> Start()
