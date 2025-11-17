@@ -23,6 +23,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "build", "build", "{F541B3EB
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.RabbitMq", "src\MJ.Akka.EventReactor.RabbitMq\MJ.Akka.EventReactor.RabbitMq.csproj", "{C7CC5959-A243-43B5-9225-EE1ADD0BE448}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.RavenDb", "src\MJ.Akka.EventReactor.RavenDb\MJ.Akka.EventReactor.RavenDb.csproj", "{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -49,6 +51,10 @@ Global
 		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C7CC5959-A243-43B5-9225-EE1ADD0BE448}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7} = {6BEBB3C5-A479-4495-A7F5-39F03165A319}

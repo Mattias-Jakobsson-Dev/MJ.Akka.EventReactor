@@ -4,6 +4,7 @@ using Akka.Actor;
 namespace MJ.Akka.EventReactor.Stateful;
 
 public class ReactorToStatefulEvents<TState>(
+    string reactorName,
     IImmutableDictionary<Type, Func<object, string>> getIds,
     IImmutableDictionary<Type, Func<IReactorContext, CancellationToken, Task<IImmutableList<object>>>> handlers,
     Func<string?, TState?> getDefaultState,
@@ -11,7 +12,11 @@ public class ReactorToStatefulEvents<TState>(
     ActorSystem actorSystem) : IReactToEvent
 {
     private readonly IActorRef _handler = actorSystem.ActorOf(
-        Props.Create(() => new SequentialReactorMessageHandlerCoordinator(handlers, getDefaultState, storage)));
+        Props.Create(() => new SequentialReactorMessageHandlerCoordinator(
+            reactorName,
+            handlers,
+            getDefaultState,
+            storage)));
     
     public async Task<IImmutableList<object>> Handle(IMessageWithAck msg, CancellationToken cancellationToken)
     {
@@ -52,6 +57,7 @@ public class ReactorToStatefulEvents<TState>(
         }
 
         public SequentialReactorMessageHandlerCoordinator(
+            string reactorName,
             IImmutableDictionary<Type, Func<IReactorContext, CancellationToken, Task<IImmutableList<object>>>> handlers,
             Func<string?, TState?> getDefaultState,
             IStatefulReactorStorage storage)
@@ -62,16 +68,21 @@ public class ReactorToStatefulEvents<TState>(
 
             Receive<Commands.SendToHandler>(cmd =>
             {
-                var handler = GetHandler(cmd.Id);
+                var handler = GetHandler(reactorName, cmd.Id);
 
                 handler.Tell(cmd.Message, Sender);
             });
         }
 
-        private IActorRef GetHandler(string id)
+        private IActorRef GetHandler(string reactorName, string id)
         {
             return Context.Child(id).GetOrElse(() => Context.ActorOf(
-                Props.Create(() => new SequentialReactorMessageHandler(id, _handlers, _getDefaultState, _storage)), id));
+                Props.Create(() => new SequentialReactorMessageHandler(
+                    reactorName,
+                    id,
+                    _handlers,
+                    _getDefaultState,
+                    _storage)), id));
         }
     }
     
@@ -91,6 +102,7 @@ public class ReactorToStatefulEvents<TState>(
         }
 
         public SequentialReactorMessageHandler(
+            string reactorName,
             string id,
             IImmutableDictionary<Type, Func<IReactorContext, CancellationToken, Task<IImmutableList<object>>>> handlers,
             Func<string?, TState?> getDefaultState,
@@ -101,7 +113,7 @@ public class ReactorToStatefulEvents<TState>(
                 try
                 {
                     var state = !string.IsNullOrEmpty(id)
-                        ? await storage.Load<TState>(id, cmd.CancellationToken) ?? getDefaultState(id)
+                        ? await storage.Load<TState>(reactorName, id, cmd.CancellationToken) ?? getDefaultState(id)
                         : getDefaultState(id);
 
                     var results = ImmutableList.CreateBuilder<object>();
@@ -122,9 +134,9 @@ public class ReactorToStatefulEvents<TState>(
                     if (!string.IsNullOrEmpty(id) && context.HasModifiedState)
                     {
                         if (context.State == null)
-                            await storage.Delete(id, cmd.CancellationToken);
+                            await storage.Delete(reactorName, id, cmd.CancellationToken);
                         else
-                            await storage.Save(id, context.State, cmd.CancellationToken);
+                            await storage.Save(reactorName, id, context.State, cmd.CancellationToken);
                     }
 
                     Sender.Tell(new Responses.HandleResponse(results.ToImmutable()));

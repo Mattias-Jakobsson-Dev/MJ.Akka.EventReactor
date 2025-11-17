@@ -1,13 +1,17 @@
 using System.Collections.Immutable;
 using Akka.Actor;
-using MJ.Akka.EventReactor.Stateful;
+using MJ.Akka.EventReactor.RavenDb;
+using MJ.Akka.EventReactor.Tests.StateStorageTests;
 using MJ.Akka.EventReactor.Tests.TestData;
 using Xunit;
 
 namespace MJ.Akka.EventReactor.Tests.EventReactorCoordinatorTests;
 
-public class StatefulReactorTests(NormalTestKitActorSystem systemHandler)
-    : EventReactorCoordinatorTestsBase(systemHandler), IClassFixture<NormalTestKitActorSystem>
+public class StatefulReactorWithRavenDbPersistenceTests(
+    NormalTestKitActorSystem systemHandler,
+    RavenDbFixture ravenDbFixture)
+    : EventReactorCoordinatorTestsBase(systemHandler),
+        IClassFixture<NormalTestKitActorSystem>, IClassFixture<RavenDbFixture>
 {
     protected override bool HasDeadLetterSupport => false;
 
@@ -18,7 +22,7 @@ public class StatefulReactorTests(NormalTestKitActorSystem systemHandler)
     {
         return new StatefulTestReactor(
             actorSystem,
-            new InMemoryStatefulReactorStorage(),
+            new RavenDbReactorStateStorage(ravenDbFixture.OpenDocumentStore()),
             events,
             name);
     }

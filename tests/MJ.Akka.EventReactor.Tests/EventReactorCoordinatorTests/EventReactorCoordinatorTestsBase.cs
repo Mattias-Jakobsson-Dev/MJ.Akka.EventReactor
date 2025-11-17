@@ -322,8 +322,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var eventId = Guid.NewGuid().ToString();
         var entityId = Guid.NewGuid().ToString();
 
-        var outputWriter = new TestOutputWriter();
-
         var reactor = CreateReactor(
             ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
                 (new StatefulEvents.EventThatModifiesState(
@@ -338,8 +336,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         var coordinator = await system
             .EventReactors(config => config
-                .WithReactor(reactor, Configure)
-                .WithOutputWriter(outputWriter))
+                .WithReactor(reactor, Configure))
             .Start();
 
         var reactorProxy = coordinator.Get(reactor.Name)!;
@@ -354,7 +351,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         
         var storage = statefulTestReactor.GetStorage();
 
-        var state = await storage.Load<TestState>(entityId, CancellationToken.None);
+        var state = await storage.Load<TestState>(reactor.Name, entityId, CancellationToken.None);
 
         state.Should().NotBeNull();
         state!.Name.Should().Be("Test");
@@ -365,11 +362,9 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
     {
         using var system = actorSystemHandler.StartNewActorSystem();
 
-        var firstEventId = "test1";
-        var secondEventId = "test2";
+        var firstEventId = Guid.NewGuid().ToString();
+        var secondEventId = Guid.NewGuid().ToString();
         var entityId = Guid.NewGuid().ToString();
-
-        var outputWriter = new TestOutputWriter();
 
         var reactor = CreateReactor(
             ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
@@ -395,8 +390,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         var coordinator = await system
             .EventReactors(config => config
-                .WithReactor(reactor, Configure)
-                .WithOutputWriter(outputWriter))
+                .WithReactor(reactor, Configure))
             .Start();
 
         var reactorProxy = coordinator.Get(reactor.Name)!;
@@ -412,7 +406,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         
         var storage = statefulTestReactor.GetStorage();
 
-        var state = await storage.Load<TestState>(entityId, CancellationToken.None);
+        var state = await storage.Load<TestState>(reactor.Name, entityId, CancellationToken.None);
 
         state.Should().NotBeNull();
         state!.Name.Should().Be("Test2");

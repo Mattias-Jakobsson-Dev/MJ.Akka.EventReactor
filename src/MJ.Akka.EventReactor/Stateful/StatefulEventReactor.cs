@@ -14,6 +14,7 @@ public abstract class StatefulEventReactor<TState>(ActorSystem actorSystem) : IC
         var results = Configure(new EventReactorSetup()).Build();
         
         return new ReactorToStatefulEvents<TState>(
+            Name,
             results.ToImmutableDictionary(x => x.Key, x => x.Value.getId),
             results.ToImmutableDictionary(x => x.Key, x => x.Value.handle),
             GetDefaultState,

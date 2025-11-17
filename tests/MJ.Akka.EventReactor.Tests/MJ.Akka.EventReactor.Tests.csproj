@@ -10,11 +10,13 @@
       <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.44" />
       <PackageReference Include="Docker.DotNet" Version="3.125.15" />
       <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.14.1" />
+      <PackageReference Include="RavenDB.TestDriver" Version="6.2.4" />
     </ItemGroup>
 
     <ItemGroup>
       <ProjectReference Include="..\..\src\MJ.Akka.EventReactor.EventStore\MJ.Akka.EventReactor.EventStore.csproj" />
       <ProjectReference Include="..\..\src\MJ.Akka.EventReactor.PositionStreamSource\MJ.Akka.EventReactor.PositionStreamSource.csproj" />
+      <ProjectReference Include="..\..\src\MJ.Akka.EventReactor.RavenDb\MJ.Akka.EventReactor.RavenDb.csproj" />
     </ItemGroup>
 
 </Project>

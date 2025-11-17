@@ -8,25 +8,30 @@ public class InMemoryStatefulReactorStorage : IStatefulReactorStorage
 {
     private readonly ConcurrentDictionary<string, ReadOnlyMemory<byte>> _states = new();
     
-    public Task<TState?> Load<TState>(string id, CancellationToken cancellationToken)
+    public Task<TState?> Load<TState>(string reactorName, string id, CancellationToken cancellationToken)
     {
-        return _states.TryGetValue(id, out var value) 
+        return _states.TryGetValue(GetKey(reactorName, id), out var value) 
             ? Task.FromResult(DeserializeData<TState>(value)) 
             : Task.FromResult<TState?>(default);
     }
 
-    public async Task Save<TState>(string id, TState state, CancellationToken cancellationToken)
+    public async Task Save<TState>(string reactorName, string id, TState state, CancellationToken cancellationToken)
     {
         var serialized = await SerializeData(state!);
         
-        _states.AddOrUpdate(id, _ => serialized, (_, _) => serialized);
+        _states.AddOrUpdate(GetKey(reactorName, id), _ => serialized, (_, _) => serialized);
     }
 
-    public Task Delete(string id, CancellationToken cancellationToken)
+    public Task Delete(string reactorName, string id, CancellationToken cancellationToken)
     {
-        _states.TryRemove(id, out _);
+        _states.TryRemove(GetKey(reactorName, id), out _);
 
         return Task.CompletedTask;
+    }
+
+    private static string GetKey(string reactorName, string id)
+    {
+        return $"{reactorName}|{id}";
     }
     
     private static TState? DeserializeData<TState>(ReadOnlyMemory<byte> data)
