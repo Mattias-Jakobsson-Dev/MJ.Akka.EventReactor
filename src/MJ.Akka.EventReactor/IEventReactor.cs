@@ -1,12 +1,10 @@
-using MJ.Akka.EventReactor.Setup;
-
 namespace MJ.Akka.EventReactor;
 
-public interface IEventReactor
+public interface IConfigureEventReactor
 {
     string Name { get; }
-
-    ISetupEventReactor Configure(ISetupEventReactor config);
-
+    
     Task<IEventReactorEventSource> GetSource();
+
+    IReactToEvent SetupReactor();
 }

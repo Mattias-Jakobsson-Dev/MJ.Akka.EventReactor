@@ -4,7 +4,7 @@ using Akka.Streams;
 namespace MJ.Akka.EventReactor.Configuration;
 
 public class EventReactorConfiguration(
-    IEventReactor eventReactor,
+    IConfigureEventReactor eventReactor,
     RestartSettings? restartSettings,
     int parallelism,
     IImmutableList<IOutputWriter> outputWriters,
@@ -20,8 +20,8 @@ public class EventReactorConfiguration(
         return eventReactor.GetSource();
     }
     
-    public Task<IImmutableList<object>> Handle(object evnt, CancellationToken cancellationToken)
+    public Task<IImmutableList<object>> Handle(IMessageWithAck msg, CancellationToken cancellationToken)
     {
-        return handler.Handle(evnt, cancellationToken);
+        return handler.Handle(msg, cancellationToken);
     }
 }

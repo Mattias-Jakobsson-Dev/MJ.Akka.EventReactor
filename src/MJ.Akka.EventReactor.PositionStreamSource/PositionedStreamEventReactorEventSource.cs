@@ -15,7 +15,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSourceW
     public PositionedStreamEventReactorEventSource(
         IStartPositionStream startPositionStream,
         ActorSystem actorSystem,
-        IEventReactor reactor,
+        IConfigureEventReactor reactor,
         int parallelism = 100,
         int positionBatchSize = 100,
         TimeSpan? positionWriteInterval = null,
@@ -54,7 +54,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSourceW
     private class GetPositionedStreamPublisher(
         ActorSystem actorSystem,
         IStartPositionStream startPositionStream,
-        IEventReactor reactor,
+        IConfigureEventReactor reactor,
         int parallelism,
         int positionBatchSize,
         TimeSpan positionWriteInterval,
