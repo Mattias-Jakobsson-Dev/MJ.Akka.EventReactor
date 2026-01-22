@@ -15,7 +15,7 @@ public class DeadLetterHandler : ReceivePersistentActor
             Dictionary<string, object?> Metadata,
             Exception Error);
 
-        public record RetryDeadLetters(long To);
+        public record RetryDeadLetters(int Count);
         
         public record ClearDeadLetters(long To);
 
@@ -26,7 +26,7 @@ public class DeadLetterHandler : ReceivePersistentActor
 
     public static class Queries
     {
-        public record Get;
+        public record Get(long From, int Count);
     }
 
     public static class Responses
@@ -74,7 +74,8 @@ public class DeadLetterHandler : ReceivePersistentActor
         Command<Commands.RetryDeadLetters>(cmd =>
         {
             var messagesToRetry = _deadLetters
-                .Where(x => x.Key <= cmd.To)
+                .OrderBy(x => x.Key)
+                .Take(cmd.Count)
                 .Select(x => x.Value)
                 .ToImmutableList();
 
@@ -122,7 +123,7 @@ public class DeadLetterHandler : ReceivePersistentActor
             });
         });
 
-        Command<Queries.Get>(_ =>
+        Command<Queries.Get>(query =>
         {
             Sender.Tell(new Responses.GetResponse(_deadLetters
                 .Select(x => new DeadLetterData(
@@ -130,6 +131,9 @@ public class DeadLetterHandler : ReceivePersistentActor
                     x.Value.Event,
                     (x.Value.Metadata ?? new Dictionary<string, object?>()).ToImmutableDictionary(),
                     x.Value.ErrorMessage))
+                .Where(x => x.Position >= query.From)
+                .OrderBy(x => x.Position)
+                .Take(query.Count)
                 .ToImmutableList()));
         });
     }

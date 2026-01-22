@@ -23,7 +23,7 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
 
         public record Nack(long Position, Exception Error);
 
-        public record RetryDeadLetters(long To);
+        public record RetryDeadLetters(int Count);
         
         public record ClearDeadLetters(long To);
 
@@ -45,7 +45,7 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
 
     public static class Queries
     {
-        public record GetDeadLetters;
+        public record GetDeadLetters(long From, int Count);
     }
     
     private static class InternalResponses

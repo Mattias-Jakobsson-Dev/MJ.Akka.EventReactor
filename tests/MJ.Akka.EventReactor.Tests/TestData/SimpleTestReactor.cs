@@ -36,7 +36,7 @@ public class SimpleTestReactor(
             .ReactWith(evnt => handledEvents
                 .AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1))
             .On<Events.EventThatFails>()
-            .ReactWith(evnt => throw evnt.Exception)
+            .ReactWith(evnt => throw new Exception("Failed"))
             .On<Events.EventThatFailsOnce>()
             .ReactWith(evnt =>
             {
@@ -44,7 +44,7 @@ public class SimpleTestReactor(
                 {
                     onceFailedEvents.Add(evnt.EventId);
 
-                    throw evnt.Exception;
+                    throw new Exception("Failed");
                 }
 
                 handledEvents

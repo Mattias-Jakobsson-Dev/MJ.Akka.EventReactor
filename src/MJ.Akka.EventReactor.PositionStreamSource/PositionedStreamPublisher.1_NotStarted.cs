@@ -46,12 +46,12 @@ public partial class PositionedStreamPublisher
 
         Command<Commands.Request>(_ => { Stash.Stash(); });
 
-        Command<Queries.GetDeadLetters>(_ =>
+        Command<Queries.GetDeadLetters>(query =>
         {
             var sender = Sender;
 
             GetDeadLetter()
-                .Ask<DeadLetterHandler.Responses.GetResponse>(new DeadLetterHandler.Queries.Get())
+                .Ask<DeadLetterHandler.Responses.GetResponse>(new DeadLetterHandler.Queries.Get(query.From, query.Count))
                 .ContinueWith(result =>
                 {
                     sender.Tell(result.IsCompletedSuccessfully

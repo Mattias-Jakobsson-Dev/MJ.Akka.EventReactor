@@ -19,9 +19,9 @@ public partial class EventReactorCoordinator : ReceiveActor
 
         public record WaitForCompletion;
 
-        public record GetDeadLetters;
+        public record GetDeadLetters(long From, int Count);
 
-        public record RetryDeadLetters(long To);
+        public record RetryDeadLetters(int Count);
         
         public record ClearDeadLetters(long To);
     }

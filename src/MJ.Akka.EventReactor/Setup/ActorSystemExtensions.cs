@@ -99,10 +99,10 @@ public static class ActorSystemExtensions
             
             private class CoordinatorDeadLetterManager(IActorRef coordinator) : IDeadLetterManager
             {
-                public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters()
+                public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters(long from, int count)
                 {
                     var response = await coordinator.Ask<EventReactorCoordinator.Responses.GetDeadLettersResponse>(
-                        new EventReactorCoordinator.Commands.GetDeadLetters());
+                        new EventReactorCoordinator.Commands.GetDeadLetters(from, count));
 
                     if (response.Error != null)
                         throw response.Error;
@@ -110,10 +110,10 @@ public static class ActorSystemExtensions
                     return response.DeadLetters;
                 }
 
-                public async Task Retry(long to)
+                public async Task Retry(int count)
                 {
                     var response = await coordinator.Ask<EventReactorCoordinator.Responses.RetryDeadLetterResponse>(
-                        new EventReactorCoordinator.Commands.RetryDeadLetters(to));
+                        new EventReactorCoordinator.Commands.RetryDeadLetters(count));
                     
                     if (response.Error != null)
                         throw response.Error;

@@ -4,12 +4,12 @@ namespace MJ.Akka.EventReactor.DeadLetter;
 
 public class EmptyDeadLetterManager : IDeadLetterManager
 {
-    public Task<IImmutableList<DeadLetterData>> LoadDeadLetters()
+    public Task<IImmutableList<DeadLetterData>> LoadDeadLetters(long from, int count)
     {
         return Task.FromResult<IImmutableList<DeadLetterData>>(ImmutableList<DeadLetterData>.Empty);
     }
 
-    public Task Retry(long to)
+    public Task Retry(int count)
     {
         return Task.CompletedTask;
     }

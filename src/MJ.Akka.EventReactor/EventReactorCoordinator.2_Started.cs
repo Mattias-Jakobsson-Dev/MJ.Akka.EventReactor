@@ -50,11 +50,11 @@ public partial class EventReactorCoordinator
             Become(() => Completed(source));
         });
         
-        ReceiveAsync<Commands.GetDeadLetters>(async _ =>
+        ReceiveAsync<Commands.GetDeadLetters>(async cmd =>
         {
             try
             {
-                var deadLetters = await deadLetterManager.LoadDeadLetters();
+                var deadLetters = await deadLetterManager.LoadDeadLetters(cmd.From, cmd.Count);
 
                 Sender.Tell(new Responses.GetDeadLettersResponse(deadLetters));
             }
@@ -68,7 +68,7 @@ public partial class EventReactorCoordinator
         {
             try
             {
-                await deadLetterManager.Retry(cmd.To);
+                await deadLetterManager.Retry(cmd.Count);
                 
                 Sender.Tell(new Responses.RetryDeadLetterResponse());
             }

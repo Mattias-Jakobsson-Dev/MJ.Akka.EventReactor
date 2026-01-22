@@ -59,7 +59,7 @@ public class StatefulTestReactor(
             .ReactWith(evnt => handledEvents
                 .AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1))
             .On<Events.EventThatFails>(x => x.EntityId)
-            .ReactWith(evnt => throw evnt.Exception)
+            .ReactWith(evnt => throw new Exception("Failed"))
             .On<Events.EventThatFailsOnce>(x => x.EntityId)
             .ReactWith(evnt =>
             {
@@ -67,7 +67,7 @@ public class StatefulTestReactor(
                 {
                     onceFailedEvents.Add(evnt.EventId);
 
-                    throw evnt.Exception;
+                    throw new Exception("Failed");
                 }
 
                 handledEvents

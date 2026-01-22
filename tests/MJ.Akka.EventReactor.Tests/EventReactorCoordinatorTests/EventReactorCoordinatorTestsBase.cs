@@ -38,7 +38,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         reactor.GetHandledEvents()[eventId].Should().Be(1);
 
         if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
     }
 
     [Fact]
@@ -80,13 +80,13 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         firstReactor.GetHandledEvents()[firstEventId].Should().Be(1);
 
         if (HasDeadLetterSupport)
-            (await firstReactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await firstReactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
 
         secondReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(secondEventId));
         secondReactor.GetHandledEvents()[secondEventId].Should().Be(1);
 
         if (HasDeadLetterSupport)
-            (await secondReactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await secondReactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
     }
 
     [Fact]
@@ -97,7 +97,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var eventId = Guid.NewGuid().ToString();
 
         var reactor = CreateReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
-                (new Events.EventThatFails(Guid.NewGuid().ToString(), eventId, new Exception("Failed")),
+                (new Events.EventThatFails(Guid.NewGuid().ToString(), eventId),
                     new Dictionary<string, object?>().ToImmutableDictionary())),
             system);
 
@@ -114,7 +114,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         if (HasDeadLetterSupport)
         {
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters())
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue))
                 .Select(x => x.Message as Events.IEvent)
                 .Where(x => x != null)
                 .Select(x => x!.EventId)
@@ -131,7 +131,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         var eventId = Guid.NewGuid().ToString();
 
         var reactor = CreateReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
-                (new Events.EventThatFailsOnce(Guid.NewGuid().ToString(), eventId, new Exception("Failed")),
+                (new Events.EventThatFailsOnce(Guid.NewGuid().ToString(), eventId),
                     new Dictionary<string, object?>().ToImmutableDictionary())),
             system);
 
@@ -150,7 +150,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         {
             var deadLettersHandler = reactorProxy.GetDeadLetters();
 
-            var deadLetters = await deadLettersHandler.LoadDeadLetters();
+            var deadLetters = await deadLettersHandler.LoadDeadLetters(0, int.MaxValue);
 
             deadLetters.Should().HaveCount(1);
 
@@ -160,13 +160,13 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
                 .Should()
                 .BeEquivalentTo(ImmutableList.Create(eventId));
 
-            await deadLettersHandler.Retry(long.MaxValue);
+            await deadLettersHandler.Retry(int.MaxValue);
 
             await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
             reactor.GetHandledEvents().Should().HaveCount(1);
 
-            (await deadLettersHandler.LoadDeadLetters()).Should().HaveCount(0);
+            (await deadLettersHandler.LoadDeadLetters(0, int.MaxValue)).Should().HaveCount(0);
         }
     }
 
@@ -206,8 +206,8 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         if (HasDeadLetterSupport)
         {
-            (await firstCoordinatorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
-            (await secondCoordinatorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await firstCoordinatorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
+            (await secondCoordinatorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
         }
     }
 
@@ -223,8 +223,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         var events = Enumerable.Range(0, numberOfEvents)
             .Select(_ => (evnt: random.Next(0, 100) < failurePercentage
-                    ? (Events.IEvent)new Events.EventThatFails(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
-                        new Exception("Failed"))
+                    ? (Events.IEvent)new Events.EventThatFails(Guid.NewGuid().ToString(), Guid.NewGuid().ToString())
                     : new Events.HandledEvent(Guid.NewGuid().ToString(), Guid.NewGuid().ToString()),
                 metadata: (IImmutableDictionary<string, object?>)
                 new Dictionary<string, object?>().ToImmutableDictionary()))
@@ -258,7 +257,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         if (HasDeadLetterSupport)
         {
-            var deadLetters = await reactorProxy.GetDeadLetters().LoadDeadLetters();
+            var deadLetters = await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue);
 
             deadLetters.Select(x => x.Message as Events.IEvent)
                 .Where(x => x != null)
@@ -305,7 +304,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         reactor.GetHandledEvents()[eventId].Should().Be(1);
 
         if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
 
         var transformedEvents = outputWriter.GetItems();
 
@@ -347,7 +346,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         reactor.GetHandledEvents()[eventId].Should().Be(1);
 
         if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
         
         var storage = statefulTestReactor.GetStorage();
 
@@ -402,7 +401,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         reactor.GetHandledEvents()[secondEventId].Should().Be(1);
 
         if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters()).Should().BeEmpty();
+            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
         
         var storage = statefulTestReactor.GetStorage();
 

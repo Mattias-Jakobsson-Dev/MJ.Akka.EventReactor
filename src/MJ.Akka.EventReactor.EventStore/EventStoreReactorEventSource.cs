@@ -1,32 +1,40 @@
 ﻿using System.Collections.Immutable;
 using Akka;
+using Akka.Actor;
 using Akka.Persistence.EventStore.Serialization;
 using Akka.Persistence.EventStore.Streams;
 using Akka.Streams.Dsl;
 using EventStore.Client;
 using JetBrains.Annotations;
+using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.EventStore;
 
 [PublicAPI]
 public class EventStoreReactorEventSource(
-    EventStorePersistentSubscriptionsClient client,
+    ActorSystem actorSystem,
+    EventStoreClient client,
+    EventStorePersistentSubscriptionsClient subscriptionClient,
     string streamName,
     string groupName,
     Func<ResolvedEvent, Task<(object data, IImmutableDictionary<string, object?> metadata)>> deSerialize,
     int maxBufferSize = 500,
     bool keepReconnecting = false,
-    int serializationParallelism = 10) : IEventReactorEventSource
+    int serializationParallelism = 10) : IEventReactorEventSourceWithDeadLetters
 {
     public EventStoreReactorEventSource(
-        EventStorePersistentSubscriptionsClient client,
+        ActorSystem actorSystem,
+        EventStoreClient client,
+        EventStorePersistentSubscriptionsClient subscriptionClient,
         string streamName,
         string groupName,
         IMessageAdapter adapter,
         int maxBufferSize = 500,
         bool keepReconnecting = false,
         int serializationParallelism = 10) : this(
+        actorSystem,
         client,
+        subscriptionClient,
         streamName,
         groupName,
         async evnt =>
@@ -53,16 +61,16 @@ public class EventStoreReactorEventSource(
         
     }
     
-    public Source<IMessageWithAck, NotUsed> Start()
+    public virtual Source<IMessageWithAck, NotUsed> Start()
     {
         return EventStoreSource
             .ForPersistentSubscription(
-                client,
+                subscriptionClient,
                 streamName,
                 groupName,
                 maxBufferSize,
                 keepReconnecting)
-            .SelectAsyncUnordered(
+            .SelectAsync(
                 serializationParallelism,
                 async evnt => new
                 {
@@ -75,7 +83,19 @@ public class EventStoreReactorEventSource(
                 x.SourceEvent.Ack,
                 e => x.SourceEvent.Nack(e.Message)));
     }
-    
+
+    public virtual IDeadLetterManager GetDeadLetters()
+    {
+        return new EventStoreDeadLetterManager(
+            client,
+            subscriptionClient,
+            streamName,
+            groupName,
+            deSerialize,
+            serializationParallelism,
+            actorSystem);
+    }
+
     private class EventStoreMessage(
         object message,
         IImmutableDictionary<string, object?> metadata,

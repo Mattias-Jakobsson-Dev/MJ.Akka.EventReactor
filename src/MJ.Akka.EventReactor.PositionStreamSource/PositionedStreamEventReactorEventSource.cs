@@ -72,18 +72,18 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSourceW
     
     private class PublisherDeadLetterManager(IActorRef publisher) : IDeadLetterManager
     {
-        public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters()
+        public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters(long from, int count)
         {
             var response = await publisher.Ask<PositionedStreamPublisher.Responses.GetDeadLettersResponse>(
-                new PositionedStreamPublisher.Queries.GetDeadLetters());
+                new PositionedStreamPublisher.Queries.GetDeadLetters(from, count));
 
             return response.DeadLetters;
         }
 
-        public async Task Retry(long to)
+        public async Task Retry(int count)
         {
             var response = await publisher.Ask<PositionedStreamPublisher.Responses.RetryDeadLettersResponse>(
-                new PositionedStreamPublisher.Commands.RetryDeadLetters(to));
+                new PositionedStreamPublisher.Commands.RetryDeadLetters(count));
 
             if (response.Error != null)
                 throw response.Error;

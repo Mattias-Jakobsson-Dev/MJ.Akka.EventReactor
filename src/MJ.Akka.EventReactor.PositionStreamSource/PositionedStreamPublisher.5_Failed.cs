@@ -13,12 +13,12 @@ public partial class PositionedStreamPublisher
             Sender.Tell(new Responses.FailureRequestResponse(failure));
         });
         
-        Command<Queries.GetDeadLetters>(_ =>
+        Command<Queries.GetDeadLetters>(query =>
         {
             var sender = Sender;
 
             GetDeadLetter()
-                .Ask<DeadLetterHandler.Responses.GetResponse>(new DeadLetterHandler.Queries.Get())
+                .Ask<DeadLetterHandler.Responses.GetResponse>(new DeadLetterHandler.Queries.Get(query.From, query.Count))
                 .ContinueWith(result =>
                 {
                     sender.Tell(result.IsCompletedSuccessfully
