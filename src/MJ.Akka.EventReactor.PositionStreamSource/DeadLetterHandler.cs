@@ -1,6 +1,7 @@
 using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Persistence;
+using JetBrains.Annotations;
 using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
@@ -38,15 +39,19 @@ public class DeadLetterHandler : ReceivePersistentActor
 
     public static class Events
     {
+        [PublicAPI]
         public record DeadLetterAdded(
+            string ReactorName,
             object Event,
             Dictionary<string, object?>? Metadata,
             string ErrorMessage,
             long OriginalPosition);
 
-        public record DeadLetterRetriedSuccessfully(long Position);
+        [PublicAPI]
+        public record DeadLetterRetriedSuccessfully(string ReactorName, long Position);
         
-        public record DeadLettersCleared(long Position);
+        [PublicAPI]
+        public record DeadLettersCleared(string ReactorName, long Position);
     }
 
     private readonly string _eventReactorName;
@@ -63,7 +68,12 @@ public class DeadLetterHandler : ReceivePersistentActor
 
         Command<Commands.AddDeadLetter>(cmd =>
         {
-            Persist(new Events.DeadLetterAdded(cmd.Event, cmd.Metadata, cmd.Error.Message, cmd.Position), evnt =>
+            Persist(new Events.DeadLetterAdded(
+                _eventReactorName,
+                cmd.Event,
+                cmd.Metadata,
+                cmd.Error.Message,
+                cmd.Position), evnt =>
             {
                 On(evnt);
 
@@ -92,7 +102,7 @@ public class DeadLetterHandler : ReceivePersistentActor
         
         Command<Commands.ClearDeadLetters>(cmd =>
         {
-            Persist(new Events.DeadLettersCleared(cmd.To), evnt =>
+            Persist(new Events.DeadLettersCleared(_eventReactorName, cmd.To), evnt =>
             {
                 On(evnt);
                 
@@ -102,7 +112,7 @@ public class DeadLetterHandler : ReceivePersistentActor
 
         Command<Commands.AckRetry>(cmd =>
         {
-            Persist(new Events.DeadLetterRetriedSuccessfully(cmd.Position), evnt =>
+            Persist(new Events.DeadLetterRetriedSuccessfully(_eventReactorName, cmd.Position), evnt =>
             {
                 On(evnt);
 
