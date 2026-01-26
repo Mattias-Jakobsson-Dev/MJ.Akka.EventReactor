@@ -1,30 +1,24 @@
 ﻿using System.Collections.Immutable;
 using Akka;
-using Akka.Actor;
 using Akka.Persistence.EventStore.Serialization;
 using Akka.Persistence.EventStore.Streams;
 using Akka.Streams.Dsl;
 using EventStore.Client;
 using JetBrains.Annotations;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.EventStore;
 
 [PublicAPI]
 public class EventStoreReactorEventSource(
-    ActorSystem actorSystem,
-    EventStoreClient client,
     EventStorePersistentSubscriptionsClient subscriptionClient,
     string streamName,
     string groupName,
     Func<ResolvedEvent, Task<(object data, IImmutableDictionary<string, object?> metadata)>> deSerialize,
     int maxBufferSize = 500,
     bool keepReconnecting = false,
-    int serializationParallelism = 10) : IEventReactorEventSourceWithDeadLetters
+    int serializationParallelism = 10) : IEventReactorEventSource
 {
     public EventStoreReactorEventSource(
-        ActorSystem actorSystem,
-        EventStoreClient client,
         EventStorePersistentSubscriptionsClient subscriptionClient,
         string streamName,
         string groupName,
@@ -32,8 +26,6 @@ public class EventStoreReactorEventSource(
         int maxBufferSize = 500,
         bool keepReconnecting = false,
         int serializationParallelism = 10) : this(
-        actorSystem,
-        client,
         subscriptionClient,
         streamName,
         groupName,
@@ -83,19 +75,7 @@ public class EventStoreReactorEventSource(
                 x.SourceEvent.Ack,
                 e => x.SourceEvent.Nack(e.Message)));
     }
-
-    public virtual IDeadLetterManager GetDeadLetters()
-    {
-        return new EventStoreDeadLetterManager(
-            client,
-            subscriptionClient,
-            streamName,
-            groupName,
-            deSerialize,
-            serializationParallelism,
-            actorSystem);
-    }
-
+    
     private class EventStoreMessage(
         object message,
         IImmutableDictionary<string, object?> metadata,

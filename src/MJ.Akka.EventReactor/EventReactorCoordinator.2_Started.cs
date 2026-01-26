@@ -1,17 +1,12 @@
-using System.Collections.Immutable;
 using Akka.Event;
-using MJ.Akka.EventReactor.DeadLetter;
 using Akka.Actor;
 
 namespace MJ.Akka.EventReactor;
 
 public partial class EventReactorCoordinator
 {
-    private void Started(IEventReactorEventSource source)
+    private void Started()
     {
-        var deadLetterManager = (source as IEventReactorEventSourceWithDeadLetters)?.GetDeadLetters() ??
-                                new EmptyDeadLetterManager();
-        
         Receive<Commands.Start>(_ =>
         {
             Sender.Tell(new Responses.StartResponse());
@@ -47,49 +42,7 @@ public partial class EventReactorCoordinator
         {
             HandleCompletionWaiters();
 
-            Become(() => Completed(source));
-        });
-        
-        ReceiveAsync<Commands.GetDeadLetters>(async cmd =>
-        {
-            try
-            {
-                var deadLetters = await deadLetterManager.LoadDeadLetters(cmd.From, cmd.Count);
-
-                Sender.Tell(new Responses.GetDeadLettersResponse(deadLetters));
-            }
-            catch (Exception e)
-            {
-                Sender.Tell(new Responses.GetDeadLettersResponse(ImmutableList<DeadLetterData>.Empty, e));
-            }
-        });
-        
-        ReceiveAsync<Commands.RetryDeadLetters>(async cmd =>
-        {
-            try
-            {
-                await deadLetterManager.Retry(cmd.Count);
-                
-                Sender.Tell(new Responses.RetryDeadLetterResponse());
-            }
-            catch (Exception e)
-            {
-                Sender.Tell(new Responses.RetryDeadLetterResponse(e));
-            }
-        });
-
-        ReceiveAsync<Commands.ClearDeadLetters>(async cmd =>
-        {
-            try
-            {
-                await deadLetterManager.Clear(cmd.To);
-                
-                Sender.Tell(new Responses.ClearDeadLetterResponse());
-            }
-            catch (Exception e)
-            {
-                Sender.Tell(new Responses.ClearDeadLetterResponse(e));
-            }
+            Become(Completed);
         });
     }
 }

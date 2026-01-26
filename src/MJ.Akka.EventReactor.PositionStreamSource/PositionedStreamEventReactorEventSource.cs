@@ -1,14 +1,12 @@
-﻿using System.Collections.Immutable;
-using Akka;
+﻿using Akka;
 using Akka.Actor;
 using Akka.Streams.Dsl;
 using JetBrains.Annotations;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
 
 [PublicAPI]
-public class PositionedStreamEventReactorEventSource : IEventReactorEventSourceWithDeadLetters
+public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
 {
     private readonly IActorRef _publisher;
     
@@ -45,11 +43,6 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSourceW
         return Source.ActorPublisher<IMessageWithAck>(PositionedStreamWorker.Init(_publisher))
             .MapMaterializedValue(_ => NotUsed.Instance);
     }
-
-    public IDeadLetterManager GetDeadLetters()
-    {
-        return new PublisherDeadLetterManager(_publisher);
-    }
     
     private class GetPositionedStreamPublisher(
         ActorSystem actorSystem,
@@ -67,35 +60,6 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSourceW
                     reactor.Name,
                     startPositionStream, 
                     new PositionedStreamSettings(parallelism, positionBatchSize, positionWriteInterval, messageTimeout))));
-        }
-    }
-    
-    private class PublisherDeadLetterManager(IActorRef publisher) : IDeadLetterManager
-    {
-        public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters(long from, int count)
-        {
-            var response = await publisher.Ask<PositionedStreamPublisher.Responses.GetDeadLettersResponse>(
-                new PositionedStreamPublisher.Queries.GetDeadLetters(from, count));
-
-            return response.DeadLetters;
-        }
-
-        public async Task Retry(int count)
-        {
-            var response = await publisher.Ask<PositionedStreamPublisher.Responses.RetryDeadLettersResponse>(
-                new PositionedStreamPublisher.Commands.RetryDeadLetters(count));
-
-            if (response.Error != null)
-                throw response.Error;
-        }
-
-        public async Task Clear(long to)
-        {
-            var response = await publisher.Ask<PositionedStreamPublisher.Responses.ClearDeadLettersResponse>(
-                new PositionedStreamPublisher.Commands.ClearDeadLetters(to));
-
-            if (response.Error != null)
-                throw response.Error;
         }
     }
 }

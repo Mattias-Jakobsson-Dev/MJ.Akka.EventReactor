@@ -10,8 +10,6 @@ namespace MJ.Akka.EventReactor.Tests.EventReactorCoordinatorTests;
 
 public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSystemHandler)
 {
-    protected abstract bool HasDeadLetterSupport { get; }
-
     [Fact]
     public async Task Reacting_to_event_that_is_successful()
     {
@@ -36,9 +34,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-
-        if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
     }
 
     [Fact]
@@ -79,14 +74,8 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         firstReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(firstEventId));
         firstReactor.GetHandledEvents()[firstEventId].Should().Be(1);
 
-        if (HasDeadLetterSupport)
-            (await firstReactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
-
         secondReactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(secondEventId));
         secondReactor.GetHandledEvents()[secondEventId].Should().Be(1);
-
-        if (HasDeadLetterSupport)
-            (await secondReactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
     }
 
     [Fact]
@@ -111,16 +100,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Should().HaveCount(0);
-
-        if (HasDeadLetterSupport)
-        {
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue))
-                .Select(x => x.Message as Events.IEvent)
-                .Where(x => x != null)
-                .Select(x => x!.EventId)
-                .Should()
-                .BeEquivalentTo(ImmutableList.Create(eventId));
-        }
     }
 
     [Fact]
@@ -145,29 +124,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
 
         reactor.GetHandledEvents().Should().HaveCount(0);
-
-        if (HasDeadLetterSupport)
-        {
-            var deadLettersHandler = reactorProxy.GetDeadLetters();
-
-            var deadLetters = await deadLettersHandler.LoadDeadLetters(0, int.MaxValue);
-
-            deadLetters.Should().HaveCount(1);
-
-            deadLetters.Select(x => x.Message as Events.IEvent)
-                .Where(x => x != null)
-                .Select(x => x!.EventId)
-                .Should()
-                .BeEquivalentTo(ImmutableList.Create(eventId));
-
-            await deadLettersHandler.Retry(int.MaxValue);
-
-            await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
-
-            reactor.GetHandledEvents().Should().HaveCount(1);
-
-            (await deadLettersHandler.LoadDeadLetters(0, int.MaxValue)).Should().HaveCount(0);
-        }
     }
 
     [Fact]
@@ -203,12 +159,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-
-        if (HasDeadLetterSupport)
-        {
-            (await firstCoordinatorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
-            (await secondCoordinatorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
-        }
     }
 
     [Theory]
@@ -245,26 +195,10 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
             .Select(x => x.evnt.EventId)
             .ToImmutableList();
 
-        var failureEvents = events
-            .Where(x => x.evnt is Events.EventThatFails)
-            .Select(x => x.evnt.EventId)
-            .ToImmutableList();
-
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(successfulEvents);
 
         foreach (var successfulEvent in successfulEvents)
             reactor.GetHandledEvents()[successfulEvent].Should().Be(1);
-
-        if (HasDeadLetterSupport)
-        {
-            var deadLetters = await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue);
-
-            deadLetters.Select(x => x.Message as Events.IEvent)
-                .Where(x => x != null)
-                .Select(x => x!.EventId)
-                .Should()
-                .BeEquivalentTo(failureEvents);
-        }
     }
 
     [Fact]
@@ -302,10 +236,7 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
 
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
-
-        if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
-
+        
         var transformedEvents = outputWriter.GetItems();
 
         transformedEvents.Should().HaveCount(2);
@@ -345,9 +276,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         reactor.GetHandledEvents().Keys.Should().BeEquivalentTo(ImmutableList.Create(eventId));
         reactor.GetHandledEvents()[eventId].Should().Be(1);
 
-        if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
-        
         var storage = statefulTestReactor.GetStorage();
 
         var state = await storage.Load<TestState>(reactor.Name, entityId, CancellationToken.None);
@@ -400,9 +328,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
         reactor.GetHandledEvents()[firstEventId].Should().Be(1);
         reactor.GetHandledEvents()[secondEventId].Should().Be(1);
 
-        if (HasDeadLetterSupport)
-            (await reactorProxy.GetDeadLetters().LoadDeadLetters(0, int.MaxValue)).Should().BeEmpty();
-        
         var storage = statefulTestReactor.GetStorage();
 
         var state = await storage.Load<TestState>(reactor.Name, entityId, CancellationToken.None);

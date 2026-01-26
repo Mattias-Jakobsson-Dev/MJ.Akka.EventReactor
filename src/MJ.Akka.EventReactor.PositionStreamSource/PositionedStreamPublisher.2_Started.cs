@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Event;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
 
@@ -252,20 +251,6 @@ public partial class PositionedStreamPublisher
             Log.Error(cmd.Failure, "Positioned stream source failed for {0}", _eventReactorName);
 
             Become(() => Failed(cmd.Failure));
-        });
-
-        Command<Queries.GetDeadLetters>(query =>
-        {
-            var sender = Sender;
-
-            GetDeadLetter()
-                .Ask<DeadLetterHandler.Responses.GetResponse>(new DeadLetterHandler.Queries.Get(query.From, query.Count))
-                .ContinueWith(result =>
-                {
-                    sender.Tell(result.IsCompletedSuccessfully
-                        ? new Responses.GetDeadLettersResponse(result.Result.DeadLetters)
-                        : new Responses.GetDeadLettersResponse(ImmutableList<DeadLetterData>.Empty));
-                });
         });
     }
 }

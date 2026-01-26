@@ -2,7 +2,6 @@ using System.Collections.Immutable;
 using Akka.Actor;
 using Akka.Persistence;
 using JetBrains.Annotations;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
 
@@ -25,16 +24,9 @@ public class DeadLetterHandler : ReceivePersistentActor
         public record NackRetry(long Position, Exception Error);
     }
 
-    public static class Queries
-    {
-        public record Get(long From, int Count);
-    }
-
     public static class Responses
     {
         public record AddDeadLetterResponse;
-
-        public record GetResponse(IImmutableList<DeadLetterData> DeadLetters);
     }
 
     public static class Events
@@ -131,20 +123,6 @@ public class DeadLetterHandler : ReceivePersistentActor
 
                 CleanupEvents();
             });
-        });
-
-        Command<Queries.Get>(query =>
-        {
-            Sender.Tell(new Responses.GetResponse(_deadLetters
-                .Select(x => new DeadLetterData(
-                    x.Key,
-                    x.Value.Event,
-                    (x.Value.Metadata ?? new Dictionary<string, object?>()).ToImmutableDictionary(),
-                    x.Value.ErrorMessage))
-                .Where(x => x.Position >= query.From)
-                .OrderBy(x => x.Position)
-                .Take(query.Count)
-                .ToImmutableList()));
         });
     }
 

@@ -13,8 +13,6 @@ public class StatefulReactorWithRavenDbPersistenceTests(
     : EventReactorCoordinatorTestsBase(systemHandler),
         IClassFixture<NormalTestKitActorSystem>, IClassFixture<RavenDbFixture>
 {
-    protected override bool HasDeadLetterSupport => false;
-
     protected override ITestReactor CreateReactor(
         IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem,

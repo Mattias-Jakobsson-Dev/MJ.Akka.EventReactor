@@ -5,7 +5,6 @@ using Akka.Event;
 using Akka.Persistence;
 using Akka.Streams;
 using Akka.Streams.Dsl;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.PositionStreamSource;
 
@@ -42,11 +41,6 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
 
         public record WritePosition(IImmutableList<long> Positions);
     }
-
-    public static class Queries
-    {
-        public record GetDeadLetters(long From, int Count);
-    }
     
     private static class InternalResponses
     {
@@ -65,8 +59,6 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
 
         public record AckNackResponse;
 
-        public record GetDeadLettersResponse(IImmutableList<DeadLetterData> DeadLetters);
-        
         public record RetryDeadLettersResponse(Exception? Error = null);
         
         public record ClearDeadLettersResponse(Exception? Error = null);

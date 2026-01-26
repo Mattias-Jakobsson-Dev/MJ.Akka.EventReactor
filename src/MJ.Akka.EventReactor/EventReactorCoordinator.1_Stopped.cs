@@ -5,7 +5,6 @@ using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using Akka.Util;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor;
 
@@ -72,7 +71,7 @@ public partial class EventReactorCoordinator
 
             StartSource(source);
 
-            Become(() => Started(source));
+            Become(Started);
 
             Sender.Tell(new Responses.StartResponse());
         });
@@ -80,26 +79,5 @@ public partial class EventReactorCoordinator
         Receive<Commands.Stop>(_ => { Sender.Tell(new Responses.StopResponse()); });
 
         Receive<Commands.WaitForCompletion>(_ => { _waitingForCompletion.Add(Sender); });
-
-        Receive<Commands.GetDeadLetters>(_ =>
-        {
-            Sender.Tell(new Responses.GetDeadLettersResponse(
-                ImmutableList<DeadLetterData>.Empty,
-                new Exception("Can't get dead letters when event reactor is stopped.")));
-        });
-
-        Receive<Commands.RetryDeadLetters>(_ =>
-        {
-            Sender.Tell(
-                new Responses.RetryDeadLetterResponse(
-                    new Exception("Can't retry dead letter when event reactor is stopped.")));
-        });
-
-        Receive<Commands.ClearDeadLetters>(_ =>
-        {
-            Sender.Tell(
-                new Responses.ClearDeadLetterResponse(
-                    new Exception("Can't clear dead letter when event reactor is stopped.")));
-        });
     }
 }

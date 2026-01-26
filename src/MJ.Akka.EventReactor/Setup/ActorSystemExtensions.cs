@@ -1,7 +1,6 @@
 using System.Collections.Immutable;
 using Akka.Actor;
 using MJ.Akka.EventReactor.Configuration;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor.Setup;
 
@@ -90,43 +89,6 @@ public static class ActorSystemExtensions
 
                 if (response.Error != null)
                     throw response.Error;
-            }
-
-            public IDeadLetterManager GetDeadLetters()
-            {
-                return new CoordinatorDeadLetterManager(coordinator);
-            }
-            
-            private class CoordinatorDeadLetterManager(IActorRef coordinator) : IDeadLetterManager
-            {
-                public async Task<IImmutableList<DeadLetterData>> LoadDeadLetters(long from, int count)
-                {
-                    var response = await coordinator.Ask<EventReactorCoordinator.Responses.GetDeadLettersResponse>(
-                        new EventReactorCoordinator.Commands.GetDeadLetters(from, count));
-
-                    if (response.Error != null)
-                        throw response.Error;
-
-                    return response.DeadLetters;
-                }
-
-                public async Task Retry(int count)
-                {
-                    var response = await coordinator.Ask<EventReactorCoordinator.Responses.RetryDeadLetterResponse>(
-                        new EventReactorCoordinator.Commands.RetryDeadLetters(count));
-                    
-                    if (response.Error != null)
-                        throw response.Error;
-                }
-
-                public async Task Clear(long to)
-                {
-                    var response = await coordinator.Ask<EventReactorCoordinator.Responses.ClearDeadLetterResponse>(
-                        new EventReactorCoordinator.Commands.ClearDeadLetters(to));
-                    
-                    if (response.Error != null)
-                        throw response.Error;
-                }
             }
         }
     }

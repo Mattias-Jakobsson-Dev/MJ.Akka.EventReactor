@@ -1,11 +1,9 @@
-using System.Collections.Immutable;
 using Akka;
 using Akka.Actor;
 using Akka.Event;
 using Akka.Streams;
 using Akka.Streams.Dsl;
 using MJ.Akka.EventReactor.Configuration;
-using MJ.Akka.EventReactor.DeadLetter;
 
 namespace MJ.Akka.EventReactor;
 
@@ -18,12 +16,6 @@ public partial class EventReactorCoordinator : ReceiveActor
         public record Stop;
 
         public record WaitForCompletion;
-
-        public record GetDeadLetters(long From, int Count);
-
-        public record RetryDeadLetters(int Count);
-        
-        public record ClearDeadLetters(long To);
     }
 
     private static class InternalCommands
@@ -40,12 +32,6 @@ public partial class EventReactorCoordinator : ReceiveActor
         public record WaitForCompletionResponse(Exception? Error = null);
 
         public record StopResponse;
-
-        public record GetDeadLettersResponse(IImmutableList<DeadLetterData> DeadLetters, Exception? Error = null);
-
-        public record RetryDeadLetterResponse(Exception? Error = null);
-        
-        public record ClearDeadLetterResponse(Exception? Error = null);
     }
 
     private readonly ILoggingAdapter _logger;

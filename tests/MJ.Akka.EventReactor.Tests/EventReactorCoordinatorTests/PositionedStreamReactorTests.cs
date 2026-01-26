@@ -13,8 +13,6 @@ namespace MJ.Akka.EventReactor.Tests.EventReactorCoordinatorTests;
 public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler) 
     : EventReactorCoordinatorTestsBase(systemHandler), IClassFixture<NormalTestKitActorSystem>
 {
-    protected override bool HasDeadLetterSupport => true;
-
     protected override ITestReactor CreateReactor(
         IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
         ActorSystem actorSystem,
