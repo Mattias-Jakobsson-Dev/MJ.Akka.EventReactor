@@ -15,9 +15,13 @@ public class DeadLetterHandler : ReceivePersistentActor
             Dictionary<string, object?> Metadata,
             Exception Error);
 
+        [PublicAPI]
         public record RetryDeadLetters(int Count);
         
+        [PublicAPI]
         public record ClearDeadLetters(long To);
+
+        public record RetryPending;
 
         public record AckRetry(long Position);
 
@@ -26,7 +30,7 @@ public class DeadLetterHandler : ReceivePersistentActor
 
     public static class Responses
     {
-        public record AddDeadLetterResponse;
+        public record ManageDeadLettersResponse;
     }
 
     public static class Events
@@ -44,10 +48,24 @@ public class DeadLetterHandler : ReceivePersistentActor
         
         [PublicAPI]
         public record DeadLettersCleared(string ReactorName, long Position);
+
+        [PublicAPI]
+        public record RetryStarted(string ReactorName, long FromPosition, long ToPosition);
     }
 
     private readonly string _eventReactorName;
     private readonly Dictionary<long, Events.DeadLetterAdded> _deadLetters = new();
+    private readonly List<(long retryPos, long from, long to)> _activeRetries = [];
+
+    public IImmutableList<(long retryPos, long from, long to)> ActiveRetries => _activeRetries
+        .Where(x => _deadLetters.Keys.Any(pos => pos >= x.from && pos <= x.to))
+        .ToImmutableList();
+    
+    public IImmutableList<Events.DeadLetterAdded> DeadLettersToRetry => _deadLetters
+        .Where(x => ActiveRetries.Any(r => x.Key >= r.from && x.Key <= r.to))
+        .OrderBy(x => x.Key)
+        .Select(x => x.Value)
+        .ToImmutableList();
 
     // ReSharper disable once MemberCanBePrivate.Global
     public DeadLetterHandler(string eventReactorName)
@@ -57,6 +75,7 @@ public class DeadLetterHandler : ReceivePersistentActor
         Recover<Events.DeadLetterAdded>(On);
         Recover<Events.DeadLetterRetriedSuccessfully>(On);
         Recover<Events.DeadLettersCleared>(On);
+        Recover<Events.RetryStarted>(On);
 
         Command<Commands.AddDeadLetter>(cmd =>
         {
@@ -69,7 +88,7 @@ public class DeadLetterHandler : ReceivePersistentActor
             {
                 On(evnt);
 
-                Sender.Tell(new Responses.AddDeadLetterResponse());
+                Sender.Tell(new Responses.ManageDeadLettersResponse());
             });
         });
 
@@ -78,18 +97,41 @@ public class DeadLetterHandler : ReceivePersistentActor
             var messagesToRetry = _deadLetters
                 .OrderBy(x => x.Key)
                 .Take(cmd.Count)
-                .Select(x => x.Value)
+                .Select(x => new
+                {
+                    Message = x.Value,
+                    Position = x.Key
+                })
                 .ToImmutableList();
+
+            if (!messagesToRetry.IsEmpty)
+            {
+                Persist(new Events.RetryStarted(
+                    _eventReactorName,
+                    messagesToRetry.Min(x => x.Position),
+                    messagesToRetry.Max(x => x.Position)), On);
+            }
 
             foreach (var deadLetter in messagesToRetry)
             {
                 Context.Parent.Tell(new PositionedStreamPublisher.Commands.PushDeadLetter(
-                        deadLetter.OriginalPosition,
-                        deadLetter.Event,
-                        deadLetter.Metadata ?? new Dictionary<string, object?>()));
+                        deadLetter.Message.OriginalPosition,
+                        deadLetter.Message.Event,
+                        deadLetter.Message.Metadata ?? new Dictionary<string, object?>()));
             }
             
-            Context.Parent.Tell(new PositionedStreamPublisher.Commands.LastDeadLetterPushed());
+            DeferAsync("done", _ => Sender.Tell(new Responses.ManageDeadLettersResponse()));
+        });
+
+        Command<Commands.RetryPending>(_ =>
+        {
+            foreach (var item in DeadLettersToRetry)
+            {
+                Context.Parent.Tell(new PositionedStreamPublisher.Commands.PushDeadLetter(
+                    item.OriginalPosition,
+                    item.Event,
+                    item.Metadata ?? new Dictionary<string, object?>()));
+            }
         });
         
         Command<Commands.ClearDeadLetters>(cmd =>
@@ -99,6 +141,8 @@ public class DeadLetterHandler : ReceivePersistentActor
                 On(evnt);
                 
                 CleanupEvents();
+
+                Sender.Tell(new Responses.ManageDeadLettersResponse());
             });
         });
 
@@ -133,6 +177,9 @@ public class DeadLetterHandler : ReceivePersistentActor
                 .Keys
                 .Min() - 1
             : LastSequenceNr;
+        
+        if (ActiveRetries.Any() && ActiveRetries.Min(x => x.retryPos) - 1 < positionToClean)
+            positionToClean = ActiveRetries.Min(x => x.retryPos) - 1;
 
         DeleteMessages(positionToClean);
     }
@@ -170,5 +217,17 @@ public class DeadLetterHandler : ReceivePersistentActor
 
         foreach (var position in positionsToClear)
             _deadLetters.Remove(position);
+        
+        var retriesToClear = _activeRetries
+            .Where(x => x.to <= evnt.Position)
+            .ToImmutableList();
+        
+        foreach (var retry in retriesToClear)
+            _activeRetries.Remove(retry);
+    }
+
+    private void On(Events.RetryStarted evnt)
+    {
+        _activeRetries.Add((LastSequenceNr, evnt.FromPosition, evnt.ToPosition));
     }
 }

@@ -19,6 +19,8 @@ public partial class PositionedStreamPublisher
             var self = Self;
             
             Log.Info("Starting positioned stream event reactor {0} from position {1}", _eventReactorName, _currentPosition);
+            
+            GetDeadLetter().Tell(new DeadLetterHandler.Commands.RetryPending());
 
             _startPositionStream
                 .StartFrom(_currentPosition)
@@ -43,19 +45,5 @@ public partial class PositionedStreamPublisher
         });
 
         Command<Commands.Request>(_ => { Stash.Stash(); });
-        
-        Command<Commands.RetryDeadLetters>(_ =>
-        {
-            Sender.Tell(
-                new Responses.RetryDeadLettersResponse(
-                    new Exception("Can't retry dead letters when publisher is not started.")));
-        });
-
-        Command<Commands.ClearDeadLetters>(cmd =>
-        {
-            GetDeadLetter().Tell(new DeadLetterHandler.Commands.ClearDeadLetters(cmd.To));
-
-            Sender.Tell(new Responses.ClearDeadLettersResponse());
-        });
     }
 }

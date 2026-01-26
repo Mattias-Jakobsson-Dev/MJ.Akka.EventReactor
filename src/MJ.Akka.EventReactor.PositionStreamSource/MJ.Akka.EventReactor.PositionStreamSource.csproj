@@ -9,7 +9,7 @@
     <PropertyGroup>
         <Copyright>Copyright © 2025 Mattias Jakobsson</Copyright>
         <Authors>Mattias Jakobsson</Authors>
-        <Version>0.19.0</Version>
+        <Version>0.20.0</Version>
         <PackageProjectUrl>
             https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor.PositionStreamSource
         </PackageProjectUrl>
@@ -35,10 +35,7 @@
       <Compile Update="PositionedStreamPublisher.2_Started.cs">
         <DependentUpon>PositionedStreamPublisher.cs</DependentUpon>
       </Compile>
-      <Compile Update="PositionedStreamPublisher.3_RetryingDeadLetters.cs">
-        <DependentUpon>PositionedStreamPublisher.cs</DependentUpon>
-      </Compile>
-      <Compile Update="PositionedStreamPublisher.4_Completed.cs">
+      <Compile Update="PositionedStreamPublisher.3_Completed.cs">
         <DependentUpon>PositionedStreamPublisher.cs</DependentUpon>
       </Compile>
       <Compile Update="PositionedStreamPublisher.5_Failed.cs">

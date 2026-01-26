@@ -8,22 +8,6 @@ public partial class PositionedStreamPublisher
     {
         Command<Commands.Request>(_ => { Sender.Tell(new Responses.CompletedRequestResponse()); });
         
-        Command<Commands.RetryDeadLetters>(cmd =>
-        {
-            GetDeadLetter().Tell(new DeadLetterHandler.Commands.RetryDeadLetters(cmd.Count));
-            
-            Become(RetryingDeadLetters);
-
-            Sender.Tell(new Responses.RetryDeadLettersResponse());
-        });
-
-        Command<Commands.ClearDeadLetters>(cmd =>
-        {
-            GetDeadLetter().Tell(new DeadLetterHandler.Commands.ClearDeadLetters(cmd.To));
-
-            Sender.Tell(new Responses.ClearDeadLettersResponse());
-        });
-        
         Command<InternalCommands.WritePosition>(cmd =>
         {
             var position = cmd.Positions

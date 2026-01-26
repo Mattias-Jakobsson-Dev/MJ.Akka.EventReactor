@@ -21,14 +21,8 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
         public record Ack(long Position);
 
         public record Nack(long Position, Exception Error);
-
-        public record RetryDeadLetters(int Count);
         
-        public record ClearDeadLetters(long To);
-
         public record PushDeadLetter(long OriginalPosition, object Message, Dictionary<string, object?> MetaData);
-
-        public record LastDeadLetterPushed;
     }
     
     private static class InternalCommands
@@ -58,10 +52,6 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
         public record CompletedRequestResponse : IRequestResponse;
 
         public record AckNackResponse;
-
-        public record RetryDeadLettersResponse(Exception? Error = null);
-        
-        public record ClearDeadLettersResponse(Exception? Error = null);
     }
 
     public static class Events

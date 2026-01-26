@@ -167,7 +167,7 @@ public partial class PositionedStreamPublisher
                 var self = Self;
                 var sender = Sender;
 
-                GetDeadLetter().Ask<DeadLetterHandler.Responses.AddDeadLetterResponse>(
+                GetDeadLetter().Ask<DeadLetterHandler.Responses.ManageDeadLettersResponse>(
                         new DeadLetterHandler.Commands.AddDeadLetter(cmd.Position, message.message, message.metadata,
                             cmd.Error))
                     .ContinueWith(result =>
@@ -178,20 +178,6 @@ public partial class PositionedStreamPublisher
                             self.Tell(cmd, sender);
                     });
             }
-        });
-
-        Command<Commands.RetryDeadLetters>(cmd =>
-        {
-            GetDeadLetter().Tell(new DeadLetterHandler.Commands.RetryDeadLetters(cmd.Count));
-
-            Sender.Tell(new Responses.RetryDeadLettersResponse());
-        });
-
-        Command<Commands.ClearDeadLetters>(cmd =>
-        {
-            GetDeadLetter().Tell(new DeadLetterHandler.Commands.ClearDeadLetters(cmd.To));
-
-            Sender.Tell(new Responses.ClearDeadLettersResponse());
         });
 
         Command<Commands.PushDeadLetter>(cmd =>
