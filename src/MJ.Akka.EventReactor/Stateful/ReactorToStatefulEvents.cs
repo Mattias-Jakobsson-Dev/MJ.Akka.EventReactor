@@ -1,5 +1,9 @@
+using System;
 using System.Collections.Immutable;
+using System.Threading;
+using System.Threading.Tasks;
 using Akka.Actor;
+using Akka.Util;
 
 namespace MJ.Akka.EventReactor.Stateful;
 
@@ -76,13 +80,15 @@ public class ReactorToStatefulEvents<TState>(
 
         private IActorRef GetHandler(string reactorName, string id)
         {
-            return Context.Child(id).GetOrElse(() => Context.ActorOf(
+            var actorName = MurmurHash.StringHash(id).ToString();
+            
+            return Context.Child(actorName).GetOrElse(() => Context.ActorOf(
                 Props.Create(() => new SequentialReactorMessageHandler(
                     reactorName,
                     id,
                     _handlers,
                     _getDefaultState,
-                    _storage)), id));
+                    _storage)), actorName));
         }
     }
     
