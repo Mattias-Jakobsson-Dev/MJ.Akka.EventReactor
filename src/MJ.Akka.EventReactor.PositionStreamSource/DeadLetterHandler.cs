@@ -41,6 +41,7 @@ public class DeadLetterHandler : ReceivePersistentActor
             object Event,
             Dictionary<string, object?>? Metadata,
             string ErrorMessage,
+            string? StackTrace,
             long OriginalPosition);
 
         [PublicAPI]
@@ -56,6 +57,8 @@ public class DeadLetterHandler : ReceivePersistentActor
     private readonly string _eventReactorName;
     private readonly Dictionary<long, Events.DeadLetterAdded> _deadLetters = new();
     private readonly List<(long retryPos, long from, long to)> _activeRetries = [];
+    
+    private long? _cleanupEventPosition;
 
     public IImmutableList<(long retryPos, long from, long to)> ActiveRetries => _activeRetries
         .Where(x => _deadLetters.Keys.Any(pos => pos >= x.from && pos <= x.to))
@@ -67,7 +70,6 @@ public class DeadLetterHandler : ReceivePersistentActor
         .Select(x => x.Value)
         .ToImmutableList();
 
-    // ReSharper disable once MemberCanBePrivate.Global
     public DeadLetterHandler(string eventReactorName)
     {
         _eventReactorName = eventReactorName;
@@ -84,6 +86,7 @@ public class DeadLetterHandler : ReceivePersistentActor
                 cmd.Event,
                 cmd.Metadata,
                 cmd.Error.Message,
+                cmd.Error.StackTrace,
                 cmd.Position), evnt =>
             {
                 On(evnt);
@@ -132,11 +135,15 @@ public class DeadLetterHandler : ReceivePersistentActor
                     item.Event,
                     item.Metadata ?? new Dictionary<string, object?>()));
             }
+            
+            CleanupEvents();
         });
         
         Command<Commands.ClearDeadLetters>(cmd =>
         {
-            Persist(new Events.DeadLettersCleared(_eventReactorName, cmd.To), evnt =>
+            var to = cmd.To > LastSequenceNr ? LastSequenceNr : cmd.To;
+            
+            Persist(new Events.DeadLettersCleared(_eventReactorName, to), evnt =>
             {
                 On(evnt);
                 
@@ -148,12 +155,7 @@ public class DeadLetterHandler : ReceivePersistentActor
 
         Command<Commands.AckRetry>(cmd =>
         {
-            Persist(new Events.DeadLetterRetriedSuccessfully(_eventReactorName, cmd.Position), evnt =>
-            {
-                On(evnt);
-
-                CleanupEvents();
-            });
+            Persist(new Events.DeadLetterRetriedSuccessfully(_eventReactorName, cmd.Position), On);
         });
 
         Command<Commands.NackRetry>(cmd =>
@@ -161,12 +163,7 @@ public class DeadLetterHandler : ReceivePersistentActor
             if (!_deadLetters.TryGetValue(cmd.Position, out var deadLetter))
                 return;
 
-            Persist(deadLetter with { ErrorMessage = cmd.Error.Message }, evnt =>
-            {
-                On(evnt);
-
-                CleanupEvents();
-            });
+            Persist(deadLetter with { ErrorMessage = cmd.Error.Message }, On);
         });
     }
 
@@ -180,6 +177,9 @@ public class DeadLetterHandler : ReceivePersistentActor
         
         if (ActiveRetries.Any() && ActiveRetries.Min(x => x.retryPos) - 1 < positionToClean)
             positionToClean = ActiveRetries.Min(x => x.retryPos) - 1;
+        
+        if (_cleanupEventPosition <= positionToClean)
+            positionToClean = _cleanupEventPosition.Value - 1;
 
         DeleteMessages(positionToClean);
     }
@@ -224,6 +224,8 @@ public class DeadLetterHandler : ReceivePersistentActor
         
         foreach (var retry in retriesToClear)
             _activeRetries.Remove(retry);
+
+        _cleanupEventPosition = LastSequenceNr;
     }
 
     private void On(Events.RetryStarted evnt)

@@ -2,7 +2,7 @@ using Akka.Actor;
 using Akka.TestKit.Xunit2;
 using JetBrains.Annotations;
 
-namespace MJ.Akka.EventReactor.Tests.EventReactorCoordinatorTests;
+namespace MJ.Akka.EventReactor.Tests;
 
 [PublicAPI]
 public class NormalTestKitActorSystem : TestKit, IHaveActorSystem
