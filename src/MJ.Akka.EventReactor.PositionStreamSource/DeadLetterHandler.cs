@@ -56,7 +56,8 @@ public class DeadLetterHandler : ReceivePersistentActor
 
     private readonly string _eventReactorName;
     private readonly Dictionary<long, Events.DeadLetterAdded> _deadLetters = new();
-    private readonly List<(long retryPos, long from, long to)> _activeRetries = [];
+    
+    private IImmutableList<(long retryPos, long from, long to)> _activeRetries = [];
     
     private long? _cleanupEventPosition;
 
@@ -205,7 +206,16 @@ public class DeadLetterHandler : ReceivePersistentActor
 
     private void On(Events.DeadLetterRetriedSuccessfully evnt)
     {
-        _deadLetters.Remove(evnt.Position);
+        var deadLettersToRemove = _deadLetters
+            .Where(x => x.Value.OriginalPosition == evnt.Position)
+            .ToImmutableList();
+
+        foreach (var item in deadLettersToRemove)
+            _deadLetters.Remove(item.Key);
+
+        _activeRetries = _activeRetries
+            .Where(x => _deadLetters.Keys.Any(pos => pos >= x.from && pos <= x.to))
+            .ToImmutableList();
     }
 
     private void On(Events.DeadLettersCleared evnt)
@@ -223,13 +233,13 @@ public class DeadLetterHandler : ReceivePersistentActor
             .ToImmutableList();
         
         foreach (var retry in retriesToClear)
-            _activeRetries.Remove(retry);
+            _activeRetries = _activeRetries.Remove(retry);
 
         _cleanupEventPosition = LastSequenceNr;
     }
 
     private void On(Events.RetryStarted evnt)
     {
-        _activeRetries.Add((LastSequenceNr, evnt.FromPosition, evnt.ToPosition));
+        _activeRetries = _activeRetries.Add((LastSequenceNr, evnt.FromPosition, evnt.ToPosition));
     }
 }
