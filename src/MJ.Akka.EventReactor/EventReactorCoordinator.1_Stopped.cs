@@ -39,9 +39,8 @@ public partial class EventReactorCoordinator
                                 var result = await _configuration
                                     .Handle(msg, CancellationTokenSource.CreateLinkedTokenSource(
                                         cancellation.Token,
-                                        timeoutToken.Token)
-                                        .Token)
-                                    .WaitAsync(timeoutToken.Token);
+                                        timeoutToken.Token).Token)
+                                    .WaitAsync(_configuration.Timeout, timeoutToken.Token);
 
                                 await msg.Ack(cancellation.Token);
 
