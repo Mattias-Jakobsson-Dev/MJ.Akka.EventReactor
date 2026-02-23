@@ -29,6 +29,17 @@ public static class EventReactorConfigExtensions
         });
     }
     
+    public static IHaveConfiguration<TConfig> WithMessageTimeout<TConfig>(
+        this IHaveConfiguration<TConfig> haveConfiguration,
+        TimeSpan timeout)
+        where TConfig : EventReactorConfig
+    {
+        return haveConfiguration.WithModifiedConfig(config => config with
+        {
+            Timeout = timeout
+        });
+    }
+    
     public static IHaveConfiguration<TConfig> WithOutputWriter<TConfig>(
         this IHaveConfiguration<TConfig> haveConfiguration,
         IOutputWriter outputWriter)
