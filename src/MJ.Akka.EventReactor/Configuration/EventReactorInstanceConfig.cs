@@ -6,11 +6,12 @@ namespace MJ.Akka.EventReactor.Configuration;
 public record EventReactorInstanceConfig(
     RestartSettings? RestartSettings,
     int? Parallelism,
+    TimeSpan? Timeout,
     IImmutableList<IOutputWriter> OutputWriters)
-    : EventReactorConfig(RestartSettings, Parallelism, OutputWriters)
+    : EventReactorConfig(RestartSettings, Parallelism, Timeout, OutputWriters)
 {
     public static EventReactorInstanceConfig Default { get; } 
-        = new(null, null, ImmutableList<IOutputWriter>.Empty);
+        = new(null, null, null, ImmutableList<IOutputWriter>.Empty);
 
     public EventReactorInstanceConfig MergeWith(EventReactorSystemConfig systemConfig)
     {

@@ -16,16 +16,14 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
         IConfigureEventReactor reactor,
         int parallelism = 100,
         int positionBatchSize = 100,
-        TimeSpan? positionWriteInterval = null,
-        TimeSpan? messageTimeout = null)
+        TimeSpan? positionWriteInterval = null)
         : this(new GetPositionedStreamPublisher(
             actorSystem,
             startPositionStream,
             reactor,
             parallelism,
             positionBatchSize,
-            positionWriteInterval ?? TimeSpan.FromSeconds(5),
-            messageTimeout ?? TimeSpan.FromSeconds(10)))
+            positionWriteInterval ?? TimeSpan.FromSeconds(5)))
     {
         
     }
@@ -50,8 +48,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
         IConfigureEventReactor reactor,
         int parallelism,
         int positionBatchSize,
-        TimeSpan positionWriteInterval,
-        TimeSpan messageTimeout) : IGetPositionedStreamPublisher
+        TimeSpan positionWriteInterval) : IGetPositionedStreamPublisher
     {
         public IActorRef GetPublisherActorRef()
         {
@@ -59,7 +56,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
                 Props.Create(() => new PositionedStreamPublisher(
                     reactor.Name,
                     startPositionStream, 
-                    new PositionedStreamSettings(parallelism, positionBatchSize, positionWriteInterval, messageTimeout))));
+                    new PositionedStreamSettings(parallelism, positionBatchSize, positionWriteInterval))));
         }
     }
 }

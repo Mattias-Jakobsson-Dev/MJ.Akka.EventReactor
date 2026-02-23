@@ -108,17 +108,9 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
             .Run(Context.System.Materializer());
     }
 
-    private void PushEventsTo(IImmutableList<EventWithPosition> events, IActorRef receiver)
+    private static void PushEventsTo(IImmutableList<EventWithPosition> events, IActorRef receiver)
     {
         receiver.Tell(new Responses.SuccessRequestResponse(events));
-
-        foreach (var evnt in events)
-        {
-            Timers.StartSingleTimer(
-                $"timeout-{evnt.Position}",
-                new Commands.Nack(evnt.Position, new Exception("Message timed out")),
-                _settings.MessageTimeout);
-        }
     }
 
     private void CompleteGraph(CancellationTokenSource cancellation)

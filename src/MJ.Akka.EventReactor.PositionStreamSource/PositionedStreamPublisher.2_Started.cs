@@ -90,8 +90,6 @@ public partial class PositionedStreamPublisher
 
         Command<Commands.Ack>(cmd =>
         {
-            Timers.Cancel($"timeout-{cmd.Position}");
-
             var hasQueuedPositionUpdate = false;
 
             if (_positionsFromDeadLetters.Contains(cmd.Position))
@@ -143,8 +141,6 @@ public partial class PositionedStreamPublisher
 
         Command<Commands.Nack>(cmd =>
         {
-            Timers.Cancel($"timeout-{cmd.Position}");
-
             //TODO: Handle retries
 
             if (_positionsFromDeadLetters.Contains(cmd.Position))

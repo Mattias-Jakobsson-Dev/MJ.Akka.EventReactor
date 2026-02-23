@@ -6,4 +6,5 @@ namespace MJ.Akka.EventReactor.Configuration;
 public abstract record EventReactorConfig(
     RestartSettings? RestartSettings,
     int? Parallelism,
+    TimeSpan? Timeout,
     IImmutableList<IOutputWriter> OutputWriters);

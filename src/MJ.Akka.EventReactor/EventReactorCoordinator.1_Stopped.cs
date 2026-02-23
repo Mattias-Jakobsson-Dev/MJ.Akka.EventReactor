@@ -32,14 +32,29 @@ public partial class EventReactorCoordinator
                         _configuration.Parallelism,
                         async msg =>
                         {
+                            using var timeoutToken = new CancellationTokenSource(_configuration.Timeout);
+                            
                             try
                             {
                                 var result = await _configuration
-                                    .Handle(msg, cancellation.Token);
+                                    .Handle(msg, CancellationTokenSource.CreateLinkedTokenSource(
+                                        cancellation.Token,
+                                        timeoutToken.Token)
+                                        .Token)
+                                    .WaitAsync(timeoutToken.Token);
 
                                 await msg.Ack(cancellation.Token);
 
                                 return result;
+                            }
+                            catch (OperationCanceledException e)
+                            {
+                                Exception reason = e;
+                                
+                                if (timeoutToken.IsCancellationRequested)
+                                    reason = new TimeoutException("Event handling timed out", e);
+
+                                await msg.Nack(reason, cancellation.Token);
                             }
                             catch (Exception e)
                             {

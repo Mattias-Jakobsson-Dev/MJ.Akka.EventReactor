@@ -7,10 +7,12 @@ public class EventReactorConfiguration(
     IConfigureEventReactor eventReactor,
     RestartSettings? restartSettings,
     int parallelism,
+    TimeSpan timeout,
     IImmutableList<IOutputWriter> outputWriters,
     IReactToEvent handler)
 {
     public string Name { get; } = eventReactor.Name;
+    public TimeSpan Timeout { get; } = timeout;
     public int Parallelism { get; } = parallelism;
     public IImmutableList<IOutputWriter> OutputWriters { get; } = outputWriters;
     public RestartSettings? RestartSettings { get; } = restartSettings;

@@ -6,13 +6,15 @@ namespace MJ.Akka.EventReactor.Configuration;
 public record EventReactorSystemConfig(
     RestartSettings? RestartSettings,
     int? Parallelism,
+    TimeSpan? Timeout,
     IImmutableList<IOutputWriter> OutputWriters,
     IImmutableDictionary<string, (
         IConfigureEventReactor eventReactor,
         Func<EventReactorSystemConfig, EventReactorConfiguration> setup)> EventReactors)
-    : EventReactorConfig(RestartSettings, Parallelism, OutputWriters)
+    : EventReactorConfig(RestartSettings, Parallelism, Timeout, OutputWriters)
 {
     public static EventReactorSystemConfig Default { get; } = new(
+        null,
         null,
         null,
         ImmutableList<IOutputWriter>.Empty, 

@@ -27,6 +27,7 @@ public static class EventReactorSystemSetupExtensions
                             eventReactor,
                             instanceConfig.RestartSettings,
                             instanceConfig.Parallelism ?? 100,
+                            instanceConfig.Timeout ?? TimeSpan.FromSeconds(10),
                             instanceConfig.OutputWriters,
                             eventReactor.SetupReactor());
                     }))
