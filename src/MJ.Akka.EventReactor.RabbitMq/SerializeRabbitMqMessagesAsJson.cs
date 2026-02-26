@@ -10,7 +10,7 @@ namespace MJ.Akka.EventReactor.RabbitMq;
 [PublicAPI]
 public class SerializeRabbitMqMessagesAsJson(Func<object, string?>? findRoutingKey = null) : IRabbitMqMessageSerializer
 {
-    public const string TypeMetadataKey = "message-type";
+    private const string TypeMetadataKey = "message-type";
 
     private static readonly JsonSerializerOptions Options = new()
     {

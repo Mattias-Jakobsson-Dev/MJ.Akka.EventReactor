@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.Rabbit
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.RavenDb", "src\MJ.Akka.EventReactor.RavenDb\MJ.Akka.EventReactor.RavenDb.csproj", "{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.SQS", "src\MJ.Akka.EventReactor.SQS\MJ.Akka.EventReactor.SQS.csproj", "{5F8E35C9-29F1-43F6-BF56-4F8191B8D0B1}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -55,6 +57,10 @@ Global
 		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{B96A4F9B-D7CF-481E-8DB0-2722D2E59F20}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F8E35C9-29F1-43F6-BF56-4F8191B8D0B1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F8E35C9-29F1-43F6-BF56-4F8191B8D0B1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F8E35C9-29F1-43F6-BF56-4F8191B8D0B1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F8E35C9-29F1-43F6-BF56-4F8191B8D0B1}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7} = {6BEBB3C5-A479-4495-A7F5-39F03165A319}

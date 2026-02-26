@@ -1,34 +1,40 @@
 using System.Collections.Immutable;
 using Akka;
-using Akka.Streams.Amqp.RabbitMq;
-using Akka.Streams.Amqp.RabbitMq.Dsl;
 using Akka.Streams.Dsl;
+using Akka.Streams.SQS;
+using Amazon.SQS;
 using JetBrains.Annotations;
 
-namespace MJ.Akka.EventReactor.RabbitMq;
+namespace MJ.Akka.EventReactor.SQS;
 
 [PublicAPI]
-public class RabbitMqEventReactorSource(
-    IAmqpSourceSettings settings,
-    int bufferSize,
-    IRabbitMqMessageSerializer? serializer = null,
-    int deSerializationParallelism = 1) : IEventReactorEventSource
+public class SqsEventReactorSource(
+    IAmazonSQS client,
+    string queueUrl,
+    ISqsMessageSerializer? serializer = null,
+    int deSerializationParallelism = 1,
+    SqsSourceSettings? settings = null) : IEventReactorEventSource
 {
     public Source<IMessageWithAck, NotUsed> Start()
     {
-        var serializerToUse = serializer ?? new SerializeRabbitMqMessagesAsJson();
+        var serializerToUse = serializer ?? new SerializeSqsMessagesAsJson();
         
-        return AmqpSource.CommittableSource(settings, bufferSize)
+        return SqsSource
+            .Create(client, queueUrl, settings)
             .SelectAsync(
                 deSerializationParallelism,
                 async x =>
                 {
-                    var (message, metadata) = await serializerToUse.DeSerialize(x.Message);
+                    var (message, metadata) = await serializerToUse.DeSerialize(x);
 
-                    return (IMessageWithAck)new MessageWithAck(message, metadata, () => x.Ack(), () => x.Nack());
+                    return (IMessageWithAck)new MessageWithAck(
+                        message,
+                        metadata, 
+                        () => client.DeleteMessageAsync(queueUrl, x.ReceiptHandle),
+                        () => Task.CompletedTask);
                 });
     }
-
+    
     private class MessageWithAck(
         object message,
         IImmutableDictionary<string, object?> metadata,
