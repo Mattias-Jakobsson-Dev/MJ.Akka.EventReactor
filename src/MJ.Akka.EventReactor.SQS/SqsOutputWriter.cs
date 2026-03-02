@@ -22,7 +22,14 @@ public class SqsOutputWriter(
         return Flow.Create<object>()
             .SelectAsync(
                 serializationParallelism,
-                serializerToUse.Serialize)
+                async x =>
+                {
+                    var serialized = await serializerToUse.Serialize(x);
+
+                    serialized.QueueUrl = queueUrl;
+
+                    return serialized;
+                })
             .ToMaterialized(SqsPublishSink.MessageSink(client, queueUrl, settings), Keep.Left);
     }
 }
