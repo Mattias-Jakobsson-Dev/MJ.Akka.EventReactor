@@ -1,3 +1,5 @@
+using System;
+using System.Linq;
 using FluentAssertions;
 using FluentAssertions.Collections;
 using JetBrains.Annotations;
