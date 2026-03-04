@@ -51,7 +51,7 @@ public partial class EventReactorCoordinator
                                 Exception reason = e;
                                 
                                 if (timeoutToken.IsCancellationRequested)
-                                    reason = new TimeoutException("Event handling timed out", e);
+                                    reason = new TimeoutException($"Event handling timed out after {_configuration.Timeout}", e);
 
                                 await msg.Nack(reason, cancellation.Token);
                             }
