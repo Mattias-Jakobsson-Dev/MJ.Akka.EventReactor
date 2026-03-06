@@ -11,7 +11,7 @@
         <Authors>Mattias Jakobsson</Authors>
         <Version>0.23.0</Version>
         <PackageProjectUrl>
-            https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor.PositionStreamSource
+            https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor
         </PackageProjectUrl>
         <PackageTags>akka</PackageTags>
         <PackageLicenseUrl>https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor/blob/master/LICENSE</PackageLicenseUrl>

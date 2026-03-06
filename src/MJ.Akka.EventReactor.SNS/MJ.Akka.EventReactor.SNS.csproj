@@ -7,22 +7,22 @@
     </PropertyGroup>
 
     <PropertyGroup>
-        <Copyright>Copyright © 2025 Mattias Jakobsson</Copyright>
+        <Copyright>Copyright © 2026 Mattias Jakobsson</Copyright>
         <Authors>Mattias Jakobsson</Authors>
-        <Version>0.6.0</Version>
+        <Version>0.1.0</Version>
         <PackageProjectUrl>
             https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor
         </PackageProjectUrl>
         <PackageTags>akka</PackageTags>
         <PackageLicenseUrl>https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor/blob/master/LICENSE</PackageLicenseUrl>
     </PropertyGroup>
-    
+
     <ItemGroup>
-      <PackageReference Include="Akka.Persistence.EventStore" Version="1.5.59" />
+        <ProjectReference Include="..\MJ.Akka.EventReactor\MJ.Akka.EventReactor.csproj" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\MJ.Akka.EventReactor\MJ.Akka.EventReactor.csproj" />
+      <PackageReference Include="Akka.Streams.Sns" Version="1.5.59" />
     </ItemGroup>
 
 </Project>
