@@ -1,12 +1,32 @@
 using System.Text.Json;
+using Amazon.SimpleNotificationService.Model;
 
 namespace MJ.Akka.EventReactor.SNS;
 
 public class SerializeSnsMessagesAsJson : ISnsMessageSerializer
 {
-    public Task<string> Serialize(object message)
+    private const string TypeMetadataKey = "message-type";
+
+    private static readonly JsonSerializerOptions Options = new()
     {
-        var json = JsonSerializer.Serialize(message);
-        return Task.FromResult(json);
+        PropertyNamingPolicy = JsonNamingPolicy.CamelCase
+    };
+
+    public Task<PublishRequest> Serialize(object message)
+    {
+        var json = JsonSerializer.Serialize(message, message.GetType(), Options);
+
+        return Task.FromResult(new PublishRequest
+        {
+            Message = json,
+            MessageAttributes = new Dictionary<string, MessageAttributeValue>
+            {
+                [TypeMetadataKey] = new()
+                {
+                    DataType = "String",
+                    StringValue = message.GetType().AssemblyQualifiedName
+                }
+            }
+        });
     }
 }
