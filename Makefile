@@ -46,6 +46,7 @@ package: clean
 	dotnet pack ./src/MJ.Akka.EventReactor.SQS -c Release -o ./.packages
 	dotnet pack ./src/MJ.Akka.EventReactor.SNS -c Release -o ./.packages
 	dotnet pack ./src/MJ.Akka.EventReactor.RavenDb -c Release -o ./.packages
+	dotnet pack ./src/MJ.Akka.EventReactor.EventSourced -c Release -o ./.packages
 
 .PHONY: publish
 publish: package
