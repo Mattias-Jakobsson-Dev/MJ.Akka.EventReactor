@@ -28,7 +28,10 @@ public class ReactorToEventSourcedEvents<TState>(
                 where handlers.ContainsKey(type)
                 let getId = getIds[type]
                 select getId(msg.Message))
-            .FirstOrDefault() ?? "default";
+            .FirstOrDefault();
+        
+        if (string.IsNullOrEmpty(id))
+            return ImmutableList<object>.Empty;
 
         var response = await _handler
             .Ask<SequentialReactorMessageHandler.Responses.HandleResponse>(
@@ -92,9 +95,6 @@ public class ReactorToEventSourcedEvents<TState>(
 
     private class SequentialReactorMessageHandler : ReceivePersistentActor
     {
-        private readonly IImmutableDictionary<
-            Type,
-            Func<IReactorContext, CancellationToken, Task<IImmutableList<object>>>> _handlers;
         private readonly IImmutableDictionary<Type, Func<TState, object, TState>> _eventAppliers;
         private TState _state;
 
@@ -118,7 +118,7 @@ public class ReactorToEventSourcedEvents<TState>(
             IImmutableDictionary<Type, Func<TState, object, TState>> eventAppliers,
             Func<string, TState> getDefaultState)
         {
-            _handlers = handlers;
+            var handlers1 = handlers;
             _eventAppliers = eventAppliers;
             _state = getDefaultState(id);
 
@@ -139,7 +139,7 @@ public class ReactorToEventSourcedEvents<TState>(
 
                     foreach (var type in cmd.Types)
                     {
-                        if (!_handlers.TryGetValue(type, out var handler))
+                        if (!handlers1.TryGetValue(type, out var handler))
                             continue;
 
                         results.AddRange(await handler(context, cmd.CancellationToken));
