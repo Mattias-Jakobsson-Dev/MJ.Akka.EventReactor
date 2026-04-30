@@ -8,55 +8,41 @@ public static class EventSourcedEventReactorReactWithExtensions
 {
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Action<TEvent> handler) => setup.ReactWith((_, evnt) =>
-    {
-        handler(evnt);
-
-        return Task.CompletedTask;
-    });
+        Func<TEvent, IEnumerable<object>> handler) => setup.ReactWith((_, evnt) => handler(evnt));
 
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Action<TState, TEvent> handler) => setup.ReactWith((state, evnt) =>
-    {
-        handler(state, evnt);
-
-        return Task.CompletedTask;
-    });
+        Func<TState, TEvent, IEnumerable<object>> handler) => setup.ReactWith((state, evnt, _, _) =>
+            Task.FromResult(handler(state, evnt)));
 
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Action<TState, TEvent, IImmutableDictionary<string, object?>> handler) => setup.ReactWith((state, evnt, metadata) =>
-    {
-        handler(state, evnt, metadata);
-
-        return Task.CompletedTask;
-    });
+        Func<TState, TEvent, IImmutableDictionary<string, object?>, IEnumerable<object>> handler) =>
+        setup.ReactWith((state, evnt, metadata, _) => Task.FromResult(handler(state, evnt, metadata)));
 
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Func<TEvent, Task> handler) => setup.ReactWith((_, evnt, _, _) => handler(evnt));
+        Func<TEvent, Task<IEnumerable<object>>> handler) => setup.ReactWith((_, evnt, _, _) => handler(evnt));
 
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Func<TState, TEvent, Task> handler) => setup.ReactWith((state, evnt, _, _) => handler(state, evnt));
+        Func<TState, TEvent, Task<IEnumerable<object>>> handler) => setup.ReactWith((state, evnt, _, _) => handler(state, evnt));
 
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Func<TState, TEvent, IImmutableDictionary<string, object?>, Task> handler) =>
+        Func<TState, TEvent, IImmutableDictionary<string, object?>, Task<IEnumerable<object>>> handler) =>
         setup.ReactWith((state, evnt, metadata, _) => handler(state, evnt, metadata));
 
     public static ISetupEventSourcedEventReactorFor<TEvent, TState> ReactWith<TEvent, TState>(
         this ISetupEventSourcedEventReactorFor<TEvent, TState> setup,
-        Func<TState, TEvent, IImmutableDictionary<string, object?>, CancellationToken, Task> handler)
+        Func<TState, TEvent, IImmutableDictionary<string, object?>, CancellationToken, Task<IEnumerable<object>>> handler)
     {
         return setup
             .HandleWith(async (context, token) =>
             {
-                await handler(context.State, (TEvent)context.Event, context.Metadata, token);
+                var events = await handler(context.State, (TEvent)context.Event, context.Metadata, token);
 
-                return ImmutableList<object>.Empty;
+                return events.ToImmutableList();
             });
     }
 }
-

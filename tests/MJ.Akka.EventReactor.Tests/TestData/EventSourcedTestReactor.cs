@@ -2,7 +2,6 @@ using System.Collections.Concurrent;
 using System.Collections.Immutable;
 using Akka;
 using Akka.Actor;
-using Akka.Streams;
 using Akka.Streams.Dsl;
 using MJ.Akka.EventReactor.EventSourced;
 
@@ -43,7 +42,7 @@ public class EventSourcedTestReactor(
     {
         setup
             .On<Events.HandledEvent>((state, _) => state)
-            .On<EventSourcedEvents.EventThatChangesState>((state, evnt) => 
+            .On<EventSourcedEvents.EventThatChangesState>((_, evnt) => 
                 new TestState(evnt.NewName));
     }
 
@@ -53,13 +52,17 @@ public class EventSourcedTestReactor(
     {
         return config
             .On<Events.HandledEvent>(x => x.EntityId)
-            .ReactWith(evnt => handledEvents
-                .AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1))
-            .TransformWith(evnt => ImmutableList.Create<object>(evnt))
+            .ReactWith(evnt =>
+            {
+                handledEvents.AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1);
+                return [evnt];
+            })
             .On<EventSourcedEvents.EventThatChangesState>(x => x.EntityId)
-            .ReactWith(evnt => handledEvents
-                .AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1))
-            .TransformWith(evnt => ImmutableList.Create<object>(evnt));
+            .ReactWith(evnt =>
+            {
+                handledEvents.AddOrUpdate(evnt.EventId, _ => 1, (_, current) => current + 1);
+                return [evnt];
+            });
     }
 
     private class EventSource(
