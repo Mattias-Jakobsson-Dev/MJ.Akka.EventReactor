@@ -4,4 +4,5 @@ public record PositionedStreamSettings(
     int Parallelism,
     int PositionBatchSize,
     TimeSpan PositionWriteInterval,
-    bool UseDeadLetter);
+    bool UseDeadLetter,
+    int MaxRetries);

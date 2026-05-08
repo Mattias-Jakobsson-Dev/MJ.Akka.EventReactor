@@ -90,6 +90,8 @@ public partial class PositionedStreamPublisher
 
         Command<Commands.Ack>(cmd =>
         {
+            _retryCounts.Remove(cmd.Position);
+
             var hasQueuedPositionUpdate = false;
 
             if (_positionsFromDeadLetters.Contains(cmd.Position))
@@ -141,13 +143,62 @@ public partial class PositionedStreamPublisher
 
         Command<Commands.Nack>(cmd =>
         {
-            //TODO: Handle retries
+            _retryCounts.TryGetValue(cmd.Position, out var retryCount);
+
+            if (retryCount < _settings.MaxRetries)
+            {
+                _retryCounts[cmd.Position] = retryCount + 1;
+
+                Log.Warning(cmd.Error,
+                    "Nack received for position {0} in {1}. Retrying ({2}/{3}).",
+                    cmd.Position, _eventReactorName, retryCount + 1, _settings.MaxRetries);
+
+                if (!_inFlightMessages.TryGetValue(cmd.Position, out var retryMessage))
+                {
+                    Sender.Tell(new Responses.AckNackResponse());
+                    return;
+                }
+
+                var eventToRetry = new EventWithPosition(
+                    retryMessage.message,
+                    retryMessage.metadata.ToImmutableDictionary(),
+                    cmd.Position);
+
+                var sendTo = _demand
+                    .OrderByDescending(x => x.Value)
+                    .Select(x => x.Key)
+                    .FirstOrDefault();
+
+                if (sendTo != null)
+                {
+                    PushEventsTo(ImmutableList.Create(eventToRetry), sendTo);
+
+                    _demand[sendTo]--;
+
+                    if (_demand[sendTo] <= 0)
+                        _demand.Remove(sendTo);
+                }
+                else
+                {
+                    _buffer.Enqueue(eventToRetry);
+                }
+
+                Sender.Tell(new Responses.AckNackResponse());
+
+                return;
+            }
+
+            _retryCounts.Remove(cmd.Position);
 
             if (!_settings.UseDeadLetter)
             {
-                Log.Error(cmd.Error, "Nack received for position {0} in {1} and dead letter is disabled. Stopping.", cmd.Position, _eventReactorName);
+                Log.Error(cmd.Error,
+                    "Nack received for position {0} in {1} and max retries ({2}) exceeded. Stopping.",
+                    cmd.Position, _eventReactorName, _settings.MaxRetries);
 
                 cancellation.Cancel();
+
+                Sender.Tell(new Responses.AckNackResponse());
 
                 Become(() => Failed(cmd.Error));
 

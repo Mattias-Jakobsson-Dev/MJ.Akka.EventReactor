@@ -96,7 +96,7 @@ public class SimpleTestReactor(
             cancellationToken.ThrowIfCancellationRequested();
             
             eventsToSkip.Add(evnt.EventId);
-            
+
             return Task.CompletedTask;
         }
     }

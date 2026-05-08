@@ -66,6 +66,7 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
     private readonly Queue<EventWithPosition> _buffer = new();
     private readonly Dictionary<long, (object message, Dictionary<string, object?> metadata)> _inFlightMessages = new();
     private readonly HashSet<long> _positionsFromDeadLetters = [];
+    private readonly Dictionary<long, int> _retryCounts = new();
     private ISourceQueueWithComplete<InternalCommands.WritePosition>? _positionUpdatedQueue;
 
     private long? _currentPosition;

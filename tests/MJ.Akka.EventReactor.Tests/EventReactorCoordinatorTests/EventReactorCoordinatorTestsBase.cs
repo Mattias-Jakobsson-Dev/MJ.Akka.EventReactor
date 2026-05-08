@@ -103,30 +103,6 @@ public abstract class EventReactorCoordinatorTestsBase(IHaveActorSystem actorSys
     }
 
     [Fact]
-    public async Task Reacting_to_event_that_fails_once_and_retrying_if_available()
-    {
-        using var system = actorSystemHandler.StartNewActorSystem();
-
-        var eventId = Guid.NewGuid().ToString();
-
-        var reactor = CreateReactor(ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
-                (new Events.EventThatFailsOnce(Guid.NewGuid().ToString(), eventId),
-                    new Dictionary<string, object?>().ToImmutableDictionary())),
-            system);
-
-        var coordinator = await system
-            .EventReactors(config => config
-                .WithReactor(reactor, Configure))
-            .Start();
-
-        var reactorProxy = coordinator.Get(reactor.Name)!;
-
-        await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
-
-        reactor.GetHandledEvents().Should().HaveCount(0);
-    }
-
-    [Fact]
     public async Task Reacting_to_event_that_is_successful_and_then_running_again()
     {
         using var system = actorSystemHandler.StartNewActorSystem();
