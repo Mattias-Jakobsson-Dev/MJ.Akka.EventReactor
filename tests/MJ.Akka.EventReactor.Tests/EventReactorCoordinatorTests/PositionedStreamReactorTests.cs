@@ -3,7 +3,9 @@ using System.Collections.Immutable;
 using Akka;
 using Akka.Actor;
 using Akka.Streams.Dsl;
+using FluentAssertions;
 using MJ.Akka.EventReactor.PositionStreamSource;
+using MJ.Akka.EventReactor.Setup;
 using MJ.Akka.EventReactor.Simple;
 using MJ.Akka.EventReactor.Tests.TestData;
 using Xunit;
@@ -64,6 +66,79 @@ public class PositionedStreamReactorTests(NormalTestKitActorSystem systemHandler
             {
                 return Task.FromResult<long?>(null);
             }
+        }
+    }
+}
+
+public class PositionedStreamReactorWithoutDeadLetterTests(NormalTestKitActorSystem systemHandler)
+    : IClassFixture<NormalTestKitActorSystem>
+{
+    [Fact]
+    public async Task Stops_with_fatal_error_on_nack_when_dead_letter_is_disabled()
+    {
+        using var system = systemHandler.StartNewActorSystem();
+
+        var eventId = Guid.NewGuid().ToString();
+
+        var reactor = new NoDeadLetterPositionedStreamReactor(
+            ImmutableList.Create<(Events.IEvent, IImmutableDictionary<string, object?>)>(
+                (new Events.EventThatFails(Guid.NewGuid().ToString(), eventId),
+                    new Dictionary<string, object?>().ToImmutableDictionary())),
+            system);
+
+        var coordinator = await system
+            .EventReactors(config => config
+                .WithReactor(reactor, c => c))
+            .Start();
+
+        var reactorProxy = coordinator.Get(reactor.Name)!;
+
+        var act = async () => await reactorProxy.WaitForCompletion(TimeSpan.FromSeconds(5));
+
+        await act.Should().ThrowAsync<Exception>();
+    }
+
+    private class NoDeadLetterPositionedStreamReactor(
+        IImmutableList<(Events.IEvent, IImmutableDictionary<string, object?>)> events,
+        ActorSystem actorSystem,
+        string? name = null)
+        : SimpleEventReactor, ITestReactor
+    {
+        private readonly ConcurrentDictionary<string, int> _handledEvents = [];
+
+        public override string Name => !string.IsNullOrEmpty(name) ? name : GetType().Name;
+
+        protected override ISetupSimpleEventReactor Configure(ISetupSimpleEventReactor config)
+        {
+            return SimpleTestReactor.ConfigureHandlers(config, _handledEvents);
+        }
+
+        public override Task<IEventReactorEventSource> GetSource()
+        {
+            return Task.FromResult<IEventReactorEventSource>(new PositionedStreamEventReactorEventSource(
+                new PositionStreamStarter(events),
+                actorSystem,
+                this,
+                positionWriteInterval: TimeSpan.FromMilliseconds(10),
+                useDeadLetter: false));
+        }
+
+        public IImmutableDictionary<string, int> GetHandledEvents() =>
+            _handledEvents.ToImmutableDictionary();
+
+        private class PositionStreamStarter(
+            IImmutableList<(Events.IEvent evnt, IImmutableDictionary<string, object?> metadata)> events)
+            : IStartPositionStream
+        {
+            public Source<EventWithPosition, NotUsed> StartFrom(long? position)
+            {
+                return Source
+                    .From(events.Select((evnt, index) =>
+                        new EventWithPosition(evnt.evnt, evnt.metadata, index + 1)))
+                    .Where(x => position == null || x.Position > position);
+            }
+
+            public Task<long?> GetInitialPosition() => Task.FromResult<long?>(null);
         }
     }
 }

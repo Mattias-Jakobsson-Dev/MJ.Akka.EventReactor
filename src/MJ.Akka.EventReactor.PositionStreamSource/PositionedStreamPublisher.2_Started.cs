@@ -143,6 +143,17 @@ public partial class PositionedStreamPublisher
         {
             //TODO: Handle retries
 
+            if (!_settings.UseDeadLetter)
+            {
+                Log.Error(cmd.Error, "Nack received for position {0} in {1} and dead letter is disabled. Stopping.", cmd.Position, _eventReactorName);
+
+                cancellation.Cancel();
+
+                Become(() => Failed(cmd.Error));
+
+                return;
+            }
+
             if (_positionsFromDeadLetters.Contains(cmd.Position))
             {
                 GetDeadLetter().Tell(new DeadLetterHandler.Commands.NackRetry(cmd.Position, cmd.Error));
