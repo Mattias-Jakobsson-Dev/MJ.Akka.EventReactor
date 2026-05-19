@@ -1,5 +1,6 @@
 using System.Collections.Immutable;
 using Akka.Actor;
+using Akka.Event;
 using Akka.Persistence;
 using Akka.Util;
 
@@ -121,6 +122,8 @@ public class ReactorToEventSourcedEvents<TState>(
             var handlers1 = handlers;
             _eventAppliers = eventAppliers;
             _state = getDefaultState(id);
+            
+            var logger = Context.GetLogger();
 
             PersistenceId = $"event-reactor-{reactorName}-{id}";
 
@@ -170,6 +173,13 @@ public class ReactorToEventSourcedEvents<TState>(
                 }
                 catch (Exception e)
                 {
+                    logger.Error(e,
+                        "[EventSourced] Error in reactor '{0}' | PersistenceId={1} | EventType={2} | Error: {3}",
+                        reactorName,
+                        PersistenceId,
+                        cmd.Message.Message.GetType().FullName,
+                        e.Message);
+
                     Sender.Tell(new Responses.HandleResponse(ImmutableList<object>.Empty, e));
                 }
             });
@@ -207,5 +217,3 @@ public class ReactorToEventSourcedEvents<TState>(
         return result.ToImmutableList();
     }
 }
-
-
