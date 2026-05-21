@@ -19,10 +19,32 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
         TimeSpan? positionWriteInterval = null,
         bool useDeadLetter = true,
         int maxRetries = 5)
+        : this(
+            startPositionStream,
+            actorSystem,
+            reactor.Name,
+            parallelism,
+            positionBatchSize,
+            positionWriteInterval,
+            useDeadLetter,
+            maxRetries)
+    {
+        
+    }
+    
+    public PositionedStreamEventReactorEventSource(
+        IStartPositionStream startPositionStream,
+        ActorSystem actorSystem,
+        string reactorName,
+        int parallelism = 100,
+        int positionBatchSize = 100,
+        TimeSpan? positionWriteInterval = null,
+        bool useDeadLetter = true,
+        int maxRetries = 5)
         : this(new GetPositionedStreamPublisher(
             actorSystem,
             startPositionStream,
-            reactor,
+            reactorName,
             parallelism,
             positionBatchSize,
             positionWriteInterval ?? TimeSpan.FromSeconds(5),
@@ -49,7 +71,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
     private class GetPositionedStreamPublisher(
         ActorSystem actorSystem,
         IStartPositionStream startPositionStream,
-        IConfigureEventReactor reactor,
+        string reactorName,
         int parallelism,
         int positionBatchSize,
         TimeSpan positionWriteInterval,
@@ -61,7 +83,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
             var settings = new PositionedStreamSettings(parallelism, positionBatchSize, positionWriteInterval, useDeadLetter, maxRetries);
             return actorSystem.ActorOf(
                 Props.Create(() => new PositionedStreamPublisher(
-                    reactor.Name,
+                    reactorName,
                     startPositionStream,
                     settings)));
         }
