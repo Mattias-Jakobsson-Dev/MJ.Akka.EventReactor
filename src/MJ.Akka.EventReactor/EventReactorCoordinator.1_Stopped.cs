@@ -33,7 +33,7 @@ public partial class EventReactorCoordinator
                         async msg =>
                         {
                             using var timeoutToken = new CancellationTokenSource(_configuration.Timeout);
-                            
+
                             try
                             {
                                 var result = await _configuration
@@ -49,7 +49,7 @@ public partial class EventReactorCoordinator
                             catch (OperationCanceledException e)
                             {
                                 Exception reason = e;
-                                
+
                                 if (timeoutToken.IsCancellationRequested)
                                     reason = new TimeoutException($"Event handling timed out after {_configuration.Timeout}", e);
 

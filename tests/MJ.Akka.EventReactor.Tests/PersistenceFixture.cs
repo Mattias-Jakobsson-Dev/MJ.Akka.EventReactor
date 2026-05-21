@@ -1,8 +1,4 @@
-using System;
-using System.Collections.Generic;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
 using Akka.Persistence;
 using Akka.Persistence.TestKit;
@@ -15,7 +11,7 @@ public abstract class PersistenceFixture : PersistenceTestKit, IAsyncLifetime
     public IImmutableList<StoredEventsInterceptor.StoredEvent> StoredEvents { get; private set; } =
         ImmutableList<StoredEventsInterceptor.StoredEvent>.Empty;
     
-    public async Task InitializeAsync()
+    public async ValueTask InitializeAsync()
     {
         await Setup();
 
@@ -31,9 +27,9 @@ public abstract class PersistenceFixture : PersistenceTestKit, IAsyncLifetime
         StoredEvents = interceptor.StoredEvents;
     }
 
-    public Task DisposeAsync()
+    public ValueTask DisposeAsync()
     {
-        return Task.CompletedTask;
+        return ValueTask.CompletedTask;
     }
 
     protected abstract Task Setup();

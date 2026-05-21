@@ -9,7 +9,7 @@
     <PropertyGroup>
         <Copyright>Copyright © 2025 Mattias Jakobsson</Copyright>
         <Authors>Mattias Jakobsson</Authors>
-        <Version>0.6.0</Version>
+        <Version>0.7.0</Version>
         <PackageProjectUrl>
             https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor
         </PackageProjectUrl>
@@ -18,7 +18,7 @@
     </PropertyGroup>
     
     <ItemGroup>
-      <PackageReference Include="Akka.Persistence.EventStore" Version="1.5.59" />
+      <PackageReference Include="Akka.Persistence.EventStore" Version="1.5.68" />
     </ItemGroup>
 
     <ItemGroup>
