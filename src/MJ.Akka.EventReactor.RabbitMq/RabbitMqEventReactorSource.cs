@@ -14,7 +14,7 @@ public class RabbitMqEventReactorSource(
     IRabbitMqMessageSerializer? serializer = null,
     int deSerializationParallelism = 1) : IEventReactorEventSource
 {
-    public Source<IMessageWithAck, NotUsed> Start()
+    public Source<IMessageWithAck, NotUsed> Start(CancellationToken cancellationToken)
     {
         var serializerToUse = serializer ?? new SerializeRabbitMqMessagesAsJson();
         

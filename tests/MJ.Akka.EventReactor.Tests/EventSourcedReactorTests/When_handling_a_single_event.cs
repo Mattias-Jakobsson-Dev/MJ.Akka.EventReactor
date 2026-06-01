@@ -33,7 +33,7 @@ public class When_handling_a_single_event : PersistenceFixture
             await msg.Ack(CancellationToken.None);
         });
 
-        await source.Start().RunWith(sink, Sys.Materializer());
+        await source.Start(CancellationToken.None).RunWith(sink, Sys.Materializer());
         
         await Task.Delay(100);
     }
@@ -80,7 +80,7 @@ public class When_handling_event_that_persists_state : PersistenceFixture
             await msg.Ack(CancellationToken.None);
         });
 
-        await source.Start().RunWith(sink, Sys.Materializer());
+        await source.Start(CancellationToken.None).RunWith(sink, Sys.Materializer());
         
         await Task.Delay(100);
     }
@@ -136,7 +136,7 @@ public class When_handling_multiple_events_to_same_entity : PersistenceFixture
             await msg.Ack(CancellationToken.None);
         });
 
-        await source.Start().RunWith(sink, Sys.Materializer());
+        await source.Start(CancellationToken.None).RunWith(sink, Sys.Materializer());
         
         await Task.Delay(100);
     }
@@ -186,7 +186,7 @@ public class When_handling_unhandled_event : PersistenceFixture
             await msg.Ack(CancellationToken.None);
         });
 
-        await source.Start().RunWith(sink, Sys.Materializer());
+        await source.Start(CancellationToken.None).RunWith(sink, Sys.Materializer());
         
         await Task.Delay(100);
     }

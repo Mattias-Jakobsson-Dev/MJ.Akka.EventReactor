@@ -70,7 +70,7 @@ public class EventSourcedTestReactor(
     {
         private readonly ConcurrentBag<string> _eventsToSkip = [];
 
-        public Source<IMessageWithAck, NotUsed> Start()
+        public Source<IMessageWithAck, NotUsed> Start(CancellationToken cancellationToken)
         {
             return Source.From(events.Where(x => !_eventsToSkip.Contains(x.evnt.EventId)))
                 .Select(IMessageWithAck (x) =>

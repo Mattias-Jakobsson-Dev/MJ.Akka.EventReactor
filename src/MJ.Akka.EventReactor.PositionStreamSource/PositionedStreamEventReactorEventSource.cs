@@ -60,7 +60,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
         _publisher = positionedStreamPublisher.GetPublisherActorRef();
     }
     
-    public Source<IMessageWithAck, NotUsed> Start()
+    public Source<IMessageWithAck, NotUsed> Start(CancellationToken cancellationToken)
     {
         _publisher.Tell(new PositionedStreamPublisher.Commands.Start());
         

@@ -15,7 +15,7 @@ public class SqsEventReactorSource(
     int deSerializationParallelism = 1,
     SqsSourceSettings? settings = null) : IEventReactorEventSource
 {
-    public Source<IMessageWithAck, NotUsed> Start()
+    public Source<IMessageWithAck, NotUsed> Start(CancellationToken cancellationToken)
     {
         var serializerToUse = serializer ?? new SerializeSqsMessagesAsJson();
         
@@ -30,7 +30,7 @@ public class SqsEventReactorSource(
                     return (IMessageWithAck)new MessageWithAck(
                         message,
                         metadata, 
-                        () => client.DeleteMessageAsync(queueUrl, x.ReceiptHandle),
+                        () => client.DeleteMessageAsync(queueUrl, x.ReceiptHandle, cancellationToken),
                         () => Task.CompletedTask);
                 });
     }

@@ -26,7 +26,7 @@ public partial class EventReactorCoordinator
                     .ToImmutableList();
 
                 return source
-                    .Start()
+                    .Start(cancellation.Token)
                     .SelectAsyncUnordered(
                         _configuration.Parallelism,
                         async msg =>

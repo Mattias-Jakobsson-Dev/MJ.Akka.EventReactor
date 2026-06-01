@@ -5,5 +5,5 @@ namespace MJ.Akka.EventReactor;
 
 public interface IEventReactorEventSource
 {
-    Source<IMessageWithAck, NotUsed> Start();
+    Source<IMessageWithAck, NotUsed> Start(CancellationToken cancellationToken);
 }

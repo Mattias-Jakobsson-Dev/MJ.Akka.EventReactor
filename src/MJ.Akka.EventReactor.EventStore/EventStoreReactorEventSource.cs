@@ -53,7 +53,7 @@ public class EventStoreReactorEventSource(
         
     }
     
-    public virtual Source<IMessageWithAck, NotUsed> Start()
+    public virtual Source<IMessageWithAck, NotUsed> Start(CancellationToken cancellationToken)
     {
         return EventStoreSource
             .ForPersistentSubscription(
