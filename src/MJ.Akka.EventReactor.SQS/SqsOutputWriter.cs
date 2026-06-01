@@ -1,6 +1,4 @@
-using Akka;
-using Akka.Streams.Dsl;
-using Akka.Streams.SQS;
+using System.Collections.Immutable;
 using Amazon.SQS;
 using JetBrains.Annotations;
 using MJ.Akka.EventReactor.Configuration;
@@ -11,25 +9,27 @@ namespace MJ.Akka.EventReactor.SQS;
 public class SqsOutputWriter(
     IAmazonSQS client,
     string queueUrl,
-    ISqsMessageSerializer? serializer = null,
-    int serializationParallelism = 1,
-    SqsPublishSettings? settings = null) : IOutputWriter
+    ISqsMessageSerializer? serializer = null) : IOutputWriter
 {
-    public Sink<object, NotUsed> CreateSink()
+    public IOutputWriter.IWriter CreateWriter()
     {
-        var serializerToUse = serializer ?? new SerializeSqsMessagesAsJson();
-        
-        return Flow.Create<object>()
-            .SelectAsync(
-                serializationParallelism,
-                async x =>
-                {
-                    var serialized = await serializerToUse.Serialize(x);
+        return new Writer(client, queueUrl, serializer ?? new SerializeSqsMessagesAsJson());
+    }
 
-                    serialized.QueueUrl = queueUrl;
+    private class Writer(
+        IAmazonSQS client,
+        string queueUrl,
+        ISqsMessageSerializer serializer) : IOutputWriter.IWriter
+    {
+        public async Task Write(IImmutableList<object> items, CancellationToken token)
+        {
+            var requests = await Task.WhenAll(items.Select(x => serializer.Serialize(x)));
 
-                    return serialized;
-                })
-            .ToMaterialized(SqsPublishSink.MessageSink(client, queueUrl, settings), Keep.Left);
+            foreach (var request in requests)
+            {
+                request.QueueUrl = queueUrl;
+                await client.SendMessageAsync(request, token);
+            }
+        }
     }
 }

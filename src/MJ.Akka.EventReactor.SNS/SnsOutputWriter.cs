@@ -1,5 +1,4 @@
-using Akka;
-using Akka.Streams.Dsl;
+using System.Collections.Immutable;
 using Amazon.SimpleNotificationService;
 using JetBrains.Annotations;
 using MJ.Akka.EventReactor.Configuration;
@@ -10,22 +9,27 @@ namespace MJ.Akka.EventReactor.SNS;
 public class SnsOutputWriter(
     string topicArn,
     IAmazonSimpleNotificationService snsService,
-    ISnsMessageSerializer? serializer = null,
-    int serializationParallelism = 1) : IOutputWriter
+    ISnsMessageSerializer? serializer = null) : IOutputWriter
 {
-    public Sink<object, NotUsed> CreateSink()
+    public IOutputWriter.IWriter CreateWriter()
     {
-        var serializerToUse = serializer ?? new SerializeSnsMessagesAsJson();
+        return new Writer(topicArn, snsService, serializer ?? new SerializeSnsMessagesAsJson());
+    }
 
-        return Flow.Create<object>()
-            .SelectAsync(
-                serializationParallelism,
-                async x =>
-                {
-                    var request = await serializerToUse.Serialize(x);
-                    request.TopicArn = topicArn;
-                    return request;
-                })
-            .ToMaterialized(SnsPublishSink.MessageSink(snsService), Keep.Left);
+    private class Writer(
+        string topicArn,
+        IAmazonSimpleNotificationService snsService,
+        ISnsMessageSerializer serializer) : IOutputWriter.IWriter
+    {
+        public async Task Write(IImmutableList<object> items, CancellationToken token)
+        {
+            var requests = await Task.WhenAll(items.Select(serializer.Serialize));
+
+            foreach (var request in requests)
+            {
+                request.TopicArn = topicArn;
+                await snsService.PublishAsync(request, token);
+            }
+        }
     }
 }

@@ -13,18 +13,17 @@ public partial class EventReactorCoordinator
     private void StartSource(IEventReactorEventSource source)
     {
         var self = Self;
-
-        var sinks = ImmutableList.Create<Sink<object, NotUsed>>(
-                Sink.OnComplete<object>(
-                    () => self.Tell(new InternalCommands.Complete()),
-                    ex => self.Tell(new InternalCommands.Fail(ex))))
-            .AddRange(_configuration.OutputWriters.Select(x => x.CreateSink()));
-
+        
         _killSwitch = MaybeCreateRestartSource(() =>
             {
                 _logger.Info("Starting event reactor source for {0}", _configuration.Name);
 
                 var cancellation = new CancellationTokenSource();
+
+                var outputWriters = _configuration
+                    .OutputWriters
+                    .Select(x => x.CreateWriter())
+                    .ToImmutableList();
 
                 return source
                     .Start()
@@ -41,10 +40,14 @@ public partial class EventReactorCoordinator
                                         cancellation.Token,
                                         timeoutToken.Token).Token)
                                     .WaitAsync(_configuration.Timeout, timeoutToken.Token);
+                                
+                                await Task.WhenAll(
+                                    outputWriters
+                                        .Select(x => x.Write(result, cancellation.Token)));
 
                                 await msg.Ack(cancellation.Token);
 
-                                return result;
+                                return NotUsed.Instance;
                             }
                             catch (OperationCanceledException e)
                             {
@@ -60,18 +63,19 @@ public partial class EventReactorCoordinator
                                 await msg.Nack(e, cancellation.Token);
                             }
 
-                            return ImmutableList<object>.Empty;
+                            return NotUsed.Instance;
                         })
                     .Recover(_ =>
                     {
                         cancellation.Cancel();
 
-                        return Option<IImmutableList<object>>.None;
-                    })
-                    .SelectMany(items => items);
+                        return Option<NotUsed>.None;
+                    });
             }, _configuration.RestartSettings)
-            .ViaMaterialized(KillSwitches.Single<object>(), Keep.Right)
-            .ToMaterialized(sinks.Combine(i => new Broadcast<object>(i)), Keep.Left)
+            .ViaMaterialized(KillSwitches.Single<NotUsed>(), Keep.Right)
+            .ToMaterialized(Sink.OnComplete<NotUsed>(
+                () => self.Tell(new InternalCommands.Complete()),
+                ex => self.Tell(new InternalCommands.Fail(ex))), Keep.Left)
             .Run(Context.System.Materializer());
     }
 

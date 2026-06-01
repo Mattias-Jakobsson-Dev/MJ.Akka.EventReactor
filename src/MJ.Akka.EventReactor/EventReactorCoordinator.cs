@@ -79,8 +79,8 @@ public partial class EventReactorCoordinator : ReceiveActor
         return Props.Create(() => new EventReactorCoordinator(configSupplier));
     }
 
-    private static Source<object, NotUsed> MaybeCreateRestartSource(
-        Func<Source<object, NotUsed>> createSource,
+    private static Source<NotUsed, NotUsed> MaybeCreateRestartSource(
+        Func<Source<NotUsed, NotUsed>> createSource,
         RestartSettings? restartSettings)
     {
         return restartSettings != null
