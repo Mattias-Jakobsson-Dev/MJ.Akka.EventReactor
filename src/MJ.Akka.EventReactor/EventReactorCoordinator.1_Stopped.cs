@@ -40,10 +40,13 @@ public partial class EventReactorCoordinator
                                         cancellation.Token,
                                         timeoutToken.Token).Token)
                                     .WaitAsync(_configuration.Timeout, timeoutToken.Token);
-                                
-                                await Task.WhenAll(
-                                    outputWriters
-                                        .Select(x => x.Write(result, cancellation.Token)));
+
+                                if (!outputWriters.IsEmpty)
+                                {
+                                    await Task.WhenAll(
+                                        outputWriters
+                                            .Select(x => x.Write(result, cancellation.Token)));
+                                }
 
                                 await msg.Ack(cancellation.Token);
 
