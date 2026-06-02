@@ -33,7 +33,7 @@ public partial class EventReactorCoordinator
 
             HandleCompletionWaiters(cmd.Cause);
 
-            Become(Stopped);
+            Become(() => Failed(cmd.Cause));
         });
 
         Receive<Commands.WaitForCompletion>(_ => { _waitingForCompletion.Add(Sender); });

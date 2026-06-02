@@ -9,7 +9,7 @@
     <PropertyGroup>
         <Copyright>Copyright © 2026 Mattias Jakobsson</Copyright>
         <Authors>Mattias Jakobsson</Authors>
-        <Version>0.24.0</Version>
+        <Version>0.25.0</Version>
         <PackageProjectUrl>
             https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor
         </PackageProjectUrl>
@@ -32,6 +32,9 @@
         <DependentUpon>EventReactorCoordinator.cs</DependentUpon>
       </Compile>
       <Compile Update="EventReactorCoordinator.3_Completed.cs">
+        <DependentUpon>EventReactorCoordinator.cs</DependentUpon>
+      </Compile>
+      <Compile Update="EventReactorCoordinator.3_Failed.cs">
         <DependentUpon>EventReactorCoordinator.cs</DependentUpon>
       </Compile>
     </ItemGroup>
