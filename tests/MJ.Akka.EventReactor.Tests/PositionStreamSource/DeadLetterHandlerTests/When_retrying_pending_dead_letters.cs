@@ -1,7 +1,4 @@
-using System;
 using System.Collections.Immutable;
-using System.Linq;
-using System.Threading.Tasks;
 using Akka.Actor;
 using FluentAssertions;
 using MJ.Akka.EventReactor.PositionStreamSource;
@@ -22,7 +19,7 @@ public class When_retrying_pending_dead_letters(When_retrying_pending_dead_lette
     public void Then_pushed_dead_letters_should_have_correct_positions()
     {
         fixture.PushedDeadLetters.Select(x => x.OriginalPosition)
-            .Should().BeEquivalentTo(1L, 2L);
+            .Should().BeEquivalentTo([1L, 2L]);
     }
 
     [Fact]

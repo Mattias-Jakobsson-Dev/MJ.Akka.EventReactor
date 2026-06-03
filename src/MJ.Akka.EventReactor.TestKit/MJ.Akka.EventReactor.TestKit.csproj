@@ -9,7 +9,7 @@
     <PropertyGroup>
         <Copyright>Copyright © 2026 Mattias Jakobsson</Copyright>
         <Authors>Mattias Jakobsson</Authors>
-        <Version>0.1.0</Version>
+        <Version>0.2.0</Version>
         <PackageProjectUrl>
             https://github.com/Mattias-Jakobsson-Dev/MJ.Akka.EventReactor
         </PackageProjectUrl>
@@ -19,7 +19,7 @@
     
     <ItemGroup>
         <PackageReference Include="Akka.TestKit.Xunit2" Version="1.5.68" />
-        <PackageReference Include="FluentAssertions" Version="5.10.3" />
+        <PackageReference Include="FluentAssertions" Version="7.2.2" />
         <PackageReference Include="JetBrains.Annotations" Version="2025.2.0">
             <PrivateAssets>all</PrivateAssets>
         </PackageReference>
