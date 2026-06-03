@@ -32,6 +32,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.SNS", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.EventSourced", "src\MJ.Akka.EventReactor.EventSourced\MJ.Akka.EventReactor.EventSourced.csproj", "{988ED8A3-3F5C-4AA4-8939-2CCBAFB13FB4}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MJ.Akka.EventReactor.TestKit", "src\MJ.Akka.EventReactor.TestKit\MJ.Akka.EventReactor.TestKit.csproj", "{145B2DC8-F8E0-4B8C-8AAE-9B8CCCEA7BF2}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -74,6 +76,10 @@ Global
 		{988ED8A3-3F5C-4AA4-8939-2CCBAFB13FB4}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{988ED8A3-3F5C-4AA4-8939-2CCBAFB13FB4}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{988ED8A3-3F5C-4AA4-8939-2CCBAFB13FB4}.Release|Any CPU.Build.0 = Release|Any CPU
+		{145B2DC8-F8E0-4B8C-8AAE-9B8CCCEA7BF2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{145B2DC8-F8E0-4B8C-8AAE-9B8CCCEA7BF2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{145B2DC8-F8E0-4B8C-8AAE-9B8CCCEA7BF2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{145B2DC8-F8E0-4B8C-8AAE-9B8CCCEA7BF2}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(NestedProjects) = preSolution
 		{3E325046-687D-4C0C-AFC5-FFA475B5CFB7} = {6BEBB3C5-A479-4495-A7F5-39F03165A319}
