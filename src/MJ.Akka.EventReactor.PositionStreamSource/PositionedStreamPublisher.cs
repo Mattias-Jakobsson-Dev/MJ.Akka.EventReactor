@@ -95,7 +95,7 @@ public partial class PositionedStreamPublisher : ReceivePersistentActor, IWithTi
         var self = Self;
         
         _positionUpdatedQueue = Source
-            .Queue<InternalCommands.WritePosition>(1_000, OverflowStrategy.DropHead)
+            .Queue<InternalCommands.WritePosition>(_settings.PositionBatchSize * 3, OverflowStrategy.DropHead)
             .GroupedWithin(_settings.PositionBatchSize, _settings.PositionWriteInterval)
             .Select(x =>
                 new InternalCommands.WritePosition(x.SelectMany(y => y.Positions).Distinct().ToImmutableList()))

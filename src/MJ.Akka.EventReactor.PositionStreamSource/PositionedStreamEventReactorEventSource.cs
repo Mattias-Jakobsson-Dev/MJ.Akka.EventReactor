@@ -37,7 +37,7 @@ public class PositionedStreamEventReactorEventSource : IEventReactorEventSource
         ActorSystem actorSystem,
         string reactorName,
         int parallelism = 100,
-        int positionBatchSize = 100,
+        int positionBatchSize = 1_000,
         TimeSpan? positionWriteInterval = null,
         bool useDeadLetter = true,
         int maxRetries = 5)
