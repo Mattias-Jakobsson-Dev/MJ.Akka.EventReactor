@@ -19,7 +19,7 @@ public class StatefulEventReactorContext<TState>(
         return Event;
     }
 
-    internal void ModifyState(TState? newState)
+    public void ModifyState(TState? newState)
     {
         State = newState;
         HasModifiedState = true;
