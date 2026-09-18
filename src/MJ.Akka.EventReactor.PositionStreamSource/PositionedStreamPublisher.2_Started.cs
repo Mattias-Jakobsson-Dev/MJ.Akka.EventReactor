@@ -148,11 +148,7 @@ public partial class PositionedStreamPublisher
             if (retryCount < _settings.MaxRetries)
             {
                 _retryCounts[cmd.Position] = retryCount + 1;
-
-                Log.Warning(cmd.Error,
-                    "Nack received for position {0} in {1}. Retrying ({2}/{3}).",
-                    cmd.Position, _eventReactorName, retryCount + 1, _settings.MaxRetries);
-
+                
                 if (!_inFlightMessages.TryGetValue(cmd.Position, out var retryMessage))
                 {
                     Sender.Tell(new Responses.AckNackResponse());
@@ -192,7 +188,7 @@ public partial class PositionedStreamPublisher
 
             if (!_settings.UseDeadLetter)
             {
-                Log.Error(cmd.Error,
+                Log.Warning(cmd.Error,
                     "Nack received for position {0} in {1} and max retries ({2}) exceeded. Stopping.",
                     cmd.Position, _eventReactorName, _settings.MaxRetries);
 
